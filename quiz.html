@@ -81,80 +81,77 @@
       <header class="header">
         <div class="header-greeting">
           <h1>Quiz Arena 🎯</h1>
-          <p>Choose a subject and test your knowledge with 30 questions</p>
+          <p>Choose a subject and test your knowledge with AI-generated questions</p>
         </div>
         <div class="header-actions">
           <div class="header-avatar" id="headerAvatar">SN</div>
         </div>
       </header>
 
-      <!-- Subject Grid -->
       <div class="quiz-subject-grid">
-
-        <div class="quiz-subject-card" data-subject="DSA" data-color="#6C4FE8">
+        <div class="quiz-subject-card" data-subject="DSA">
           <div class="qsc-icon" style="background:linear-gradient(135deg,#6C4FE8,#9B7FFF)">🌳</div>
           <div class="qsc-name">DSA</div>
           <div class="qsc-full">Data Structures & Algorithms</div>
-          <div class="qsc-meta">30 Questions · 30 min</div>
-          <button class="qsc-btn" onclick="startQuiz('DSA')">Start Quiz →</button>
+          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
+          <button class="qsc-btn" onclick="selectSubject('DSA')">Start Quiz →</button>
         </div>
 
-        <div class="quiz-subject-card" data-subject="DBMS" data-color="#10B981">
+        <div class="quiz-subject-card" data-subject="DBMS">
           <div class="qsc-icon" style="background:linear-gradient(135deg,#10B981,#34D399)">🗄️</div>
           <div class="qsc-name">DBMS</div>
           <div class="qsc-full">Database Management Systems</div>
-          <div class="qsc-meta">30 Questions · 30 min</div>
-          <button class="qsc-btn" onclick="startQuiz('DBMS')">Start Quiz →</button>
+          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
+          <button class="qsc-btn" onclick="selectSubject('DBMS')">Start Quiz →</button>
         </div>
 
-        <div class="quiz-subject-card" data-subject="OS" data-color="#F97316">
+        <div class="quiz-subject-card" data-subject="OS">
           <div class="qsc-icon" style="background:linear-gradient(135deg,#F97316,#FBBF24)">🖥️</div>
           <div class="qsc-name">OS</div>
           <div class="qsc-full">Operating Systems</div>
-          <div class="qsc-meta">30 Questions · 30 min</div>
-          <button class="qsc-btn" onclick="startQuiz('OS')">Start Quiz →</button>
+          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
+          <button class="qsc-btn" onclick="selectSubject('OS')">Start Quiz →</button>
         </div>
 
-        <div class="quiz-subject-card" data-subject="CN" data-color="#3B82F6">
+        <div class="quiz-subject-card" data-subject="CN">
           <div class="qsc-icon" style="background:linear-gradient(135deg,#3B82F6,#60A5FA)">🌐</div>
           <div class="qsc-name">CN</div>
           <div class="qsc-full">Computer Networks</div>
-          <div class="qsc-meta">30 Questions · 30 min</div>
-          <button class="qsc-btn" onclick="startQuiz('CN')">Start Quiz →</button>
+          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
+          <button class="qsc-btn" onclick="selectSubject('CN')">Start Quiz →</button>
         </div>
 
-        <div class="quiz-subject-card" data-subject="C" data-color="#EF4444">
+        <div class="quiz-subject-card" data-subject="C">
           <div class="qsc-icon" style="background:linear-gradient(135deg,#EF4444,#F87171)">⚙️</div>
           <div class="qsc-name">C</div>
           <div class="qsc-full">C Programming</div>
-          <div class="qsc-meta">30 Questions · 30 min</div>
-          <button class="qsc-btn" onclick="startQuiz('C')">Start Quiz →</button>
+          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
+          <button class="qsc-btn" onclick="selectSubject('C')">Start Quiz →</button>
         </div>
 
-        <div class="quiz-subject-card" data-subject="CPP" data-color="#8B5CF6">
+        <div class="quiz-subject-card" data-subject="CPP">
           <div class="qsc-icon" style="background:linear-gradient(135deg,#8B5CF6,#A78BFA)">🔷</div>
           <div class="qsc-name">C++</div>
           <div class="qsc-full">C++ Programming</div>
-          <div class="qsc-meta">30 Questions · 30 min</div>
-          <button class="qsc-btn" onclick="startQuiz('CPP')">Start Quiz →</button>
+          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
+          <button class="qsc-btn" onclick="selectSubject('CPP')">Start Quiz →</button>
         </div>
 
-        <div class="quiz-subject-card" data-subject="Java" data-color="#F59E0B">
+        <div class="quiz-subject-card" data-subject="Java">
           <div class="qsc-icon" style="background:linear-gradient(135deg,#F59E0B,#FCD34D)">☕</div>
           <div class="qsc-name">Java</div>
           <div class="qsc-full">Java Programming</div>
-          <div class="qsc-meta">30 Questions · 30 min</div>
-          <button class="qsc-btn" onclick="startQuiz('Java')">Start Quiz →</button>
+          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
+          <button class="qsc-btn" onclick="selectSubject('Java')">Start Quiz →</button>
         </div>
 
-        <div class="quiz-subject-card" data-subject="Python" data-color="#14B8A6">
+        <div class="quiz-subject-card" data-subject="Python">
           <div class="qsc-icon" style="background:linear-gradient(135deg,#14B8A6,#2DD4BF)">🐍</div>
           <div class="qsc-name">Python</div>
           <div class="qsc-full">Python Programming</div>
-          <div class="qsc-meta">30 Questions · 30 min</div>
-          <button class="qsc-btn" onclick="startQuiz('Python')">Start Quiz →</button>
+          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
+          <button class="qsc-btn" onclick="selectSubject('Python')">Start Quiz →</button>
         </div>
-
       </div>
 
       <!-- Past Results -->
@@ -168,16 +165,120 @@
       </div>
     </div>
 
-    <!-- ══ SCREEN 2: QUIZ IN PROGRESS ══ -->
+    <!-- ══ SCREEN 2: DIFFICULTY SELECTION ══ -->
+    <div id="screenDifficulty" style="display:none">
+      <header class="header">
+        <div class="header-greeting">
+          <h1 id="diffSubjectTitle">DSA Quiz 🎯</h1>
+          <p>Choose your difficulty level — AI will generate 10 unique questions</p>
+        </div>
+        <div class="header-actions">
+          <button class="quiz-back-btn" onclick="goBackToSubjects()">← Back</button>
+        </div>
+      </header>
+
+      <div class="difficulty-grid">
+
+        <!-- Easy -->
+        <div class="difficulty-card easy" onclick="startQuiz('Easy')">
+          <div class="diff-glow"></div>
+          <div class="diff-icon">🌱</div>
+          <div class="diff-level-badge easy-badge">EASY</div>
+          <h2 class="diff-title">Beginner</h2>
+          <p class="diff-desc">Fundamental concepts, definitions, and basic operations. Perfect for warming up or testing your basics.</p>
+          <div class="diff-stats">
+            <div class="diff-stat">
+              <span class="diff-stat-val">10</span>
+              <span class="diff-stat-label">Questions</span>
+            </div>
+            <div class="diff-stat-divider"></div>
+            <div class="diff-stat">
+              <span class="diff-stat-val">1 min</span>
+              <span class="diff-stat-label">Per Question</span>
+            </div>
+            <div class="diff-stat-divider"></div>
+            <div class="diff-stat">
+              <span class="diff-stat-val">10 min</span>
+              <span class="diff-stat-label">Total Time</span>
+            </div>
+          </div>
+          <button class="diff-btn easy-btn">Start Easy Quiz →</button>
+        </div>
+
+        <!-- Medium -->
+        <div class="difficulty-card medium" onclick="startQuiz('Medium')">
+          <div class="diff-glow medium-glow"></div>
+          <div class="diff-icon">⚡</div>
+          <div class="diff-level-badge medium-badge">MEDIUM</div>
+          <h2 class="diff-title">Intermediate</h2>
+          <p class="diff-desc">Application of concepts, problem-solving, moderate complexity. Ideal for interview preparation.</p>
+          <div class="diff-stats">
+            <div class="diff-stat">
+              <span class="diff-stat-val">10</span>
+              <span class="diff-stat-label">Questions</span>
+            </div>
+            <div class="diff-stat-divider"></div>
+            <div class="diff-stat">
+              <span class="diff-stat-val">1 min</span>
+              <span class="diff-stat-label">Per Question</span>
+            </div>
+            <div class="diff-stat-divider"></div>
+            <div class="diff-stat">
+              <span class="diff-stat-val">10 min</span>
+              <span class="diff-stat-label">Total Time</span>
+            </div>
+          </div>
+          <button class="diff-btn medium-btn">Start Medium Quiz →</button>
+        </div>
+
+        <!-- Hard -->
+        <div class="difficulty-card hard" onclick="startQuiz('Hard')">
+          <div class="diff-glow hard-glow"></div>
+          <div class="diff-icon">🔥</div>
+          <div class="diff-level-badge hard-badge">HARD</div>
+          <h2 class="diff-title">Advanced</h2>
+          <p class="diff-desc">Complex algorithms, edge cases, expert-level tricky questions. For the truly prepared.</p>
+          <div class="diff-stats">
+            <div class="diff-stat">
+              <span class="diff-stat-val">10</span>
+              <span class="diff-stat-label">Questions</span>
+            </div>
+            <div class="diff-stat-divider"></div>
+            <div class="diff-stat">
+              <span class="diff-stat-val">1 min</span>
+              <span class="diff-stat-label">Per Question</span>
+            </div>
+            <div class="diff-stat-divider"></div>
+            <div class="diff-stat">
+              <span class="diff-stat-val">10 min</span>
+              <span class="diff-stat-label">Total Time</span>
+            </div>
+          </div>
+          <button class="diff-btn hard-btn">Start Hard Quiz →</button>
+        </div>
+
+      </div>
+
+      <!-- AI Info Banner -->
+      <div class="ai-info-banner">
+        <div class="ai-info-icon">🤖</div>
+        <div class="ai-info-text">
+          <strong>AI-Powered Questions</strong>
+          <span>Questions are uniquely generated by Groq AI (Llama 3.3 70B) for every quiz attempt — no two quizzes are the same!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 3: QUIZ IN PROGRESS ══ -->
     <div id="screenQuiz" style="display:none">
-      <!-- Top Bar -->
       <div class="quiz-topbar">
         <div class="quiz-topbar-left">
           <button class="quiz-quit-btn" onclick="confirmQuit()">✕ Quit</button>
           <div class="quiz-subject-badge" id="quizSubjectBadge">DSA</div>
+          <div class="quiz-diff-badge" id="quizDiffBadge">Easy</div>
         </div>
         <div class="quiz-topbar-center">
-          <span id="qProgress">Question 1 of 30</span>
+          <span id="qProgress">Question 1 of 10</span>
         </div>
         <div class="quiz-topbar-right">
           <div class="quiz-timer" id="quizTimer">
@@ -187,24 +288,18 @@
         </div>
       </div>
 
-      <!-- Progress Bar -->
       <div class="quiz-progress-track">
-        <div class="quiz-progress-fill" id="quizProgressFill" style="width:3.33%"></div>
+        <div class="quiz-progress-fill" id="quizProgressFill" style="width:10%"></div>
       </div>
 
-      <!-- Question Dots -->
       <div class="quiz-dots-row" id="quizDotsRow"></div>
 
-      <!-- Question Body -->
       <div class="quiz-question-box">
         <div class="quiz-q-number" id="qNumber">Q1</div>
         <div class="quiz-q-text" id="qText">Loading question...</div>
-        <div class="quiz-options" id="qOptions">
-          <!-- Generated by JS -->
-        </div>
+        <div class="quiz-options" id="qOptions"></div>
       </div>
 
-      <!-- Nav Buttons -->
       <div class="quiz-nav-row">
         <button class="quiz-nav-btn" id="btnPrev" onclick="prevQuestion()" disabled>← Previous</button>
         <button class="quiz-skip-btn" onclick="skipQuestion()">Skip</button>
@@ -212,14 +307,13 @@
       </div>
     </div>
 
-    <!-- ══ SCREEN 3: RESULT ══ -->
+    <!-- ══ SCREEN 4: RESULT ══ -->
     <div id="screenResult" style="display:none">
       <div class="quiz-result-wrap">
-
         <div class="quiz-result-card">
           <div class="quiz-result-emoji" id="resultEmoji">🎉</div>
           <h2 class="quiz-result-title" id="resultTitle">Quiz Complete!</h2>
-          <div class="quiz-result-subject" id="resultSubject">DSA</div>
+          <div class="quiz-result-subject" id="resultSubject">DSA — Easy</div>
 
           <div class="quiz-score-circle">
             <svg viewBox="0 0 120 120">
@@ -231,7 +325,7 @@
             </svg>
             <div class="quiz-score-center">
               <div class="quiz-score-val" id="scoreVal">0</div>
-              <div class="quiz-score-label">/ 30</div>
+              <div class="quiz-score-label">/ 10</div>
             </div>
           </div>
 
@@ -261,18 +355,15 @@
             <button class="quiz-action-btn primary" onclick="retakeQuiz()">🔄 Retake Quiz</button>
             <button class="quiz-action-btn outline" onclick="goHome()">🏠 Dashboard</button>
           </div>
+          <button class="quiz-action-btn outline" style="margin-top:10px;width:100%" onclick="goBackToSubjects()">🎯 Try Another Subject</button>
         </div>
 
-        <!-- Review Section (hidden initially) -->
         <div id="reviewSection" style="display:none; margin-top:24px; width:100%">
           <div class="panel">
-            <div class="panel-header">
-              <h3 class="panel-title">📝 Answer Review</h3>
-            </div>
+            <div class="panel-header"><h3 class="panel-title">📝 Answer Review</h3></div>
             <div id="reviewList"></div>
           </div>
         </div>
-
       </div>
     </div>
 

@@ -1,19 +1,20 @@
 // ═══════════════════════════════════════════════
 //  quiz.js — InterviewOS Quiz Engine
-//  30 Questions · 1 min/question · Auto-submit
+//  AI-Generated · 3 Levels · 10 Questions · 1 min/q
 // ═══════════════════════════════════════════════
 
 const TIME_PER_QUESTION = 60; // seconds
 
-let questions     = [];
-let currentIndex  = 0;
-let answers       = [];       // stores 'A','B','C','D' or null
-let selectedSubject = '';
-let timerInterval = null;
-let timeLeft      = TIME_PER_QUESTION;
-let quizStartTime = null;
+let questions        = [];
+let currentIndex     = 0;
+let answers          = [];
+let selectedSubject  = '';
+let selectedDifficulty = '';
+let timerInterval    = null;
+let timeLeft         = TIME_PER_QUESTION;
+let quizStartTime    = null;
 
-// ─── Auth token from localStorage ───
+// ─── Auth token ───
 function getToken() {
   return localStorage.getItem('ios_token') || '';
 }
@@ -22,19 +23,7 @@ function getToken() {
 document.addEventListener('DOMContentLoaded', () => {
   loadUserProfile();
   loadPastResults();
-  setupDashboardButton();
 });
-
-// ─── Enable "Start Quiz" button on dashboard ───
-function setupDashboardButton() {
-  // This runs if quiz.js is loaded on dashboard page
-  const btn = document.getElementById('btnStartQuiz');
-  if (btn) {
-    btn.addEventListener('click', () => {
-      window.location.href = 'quiz.html';
-    });
-  }
-}
 
 // ─── Load sidebar user info ───
 async function loadUserProfile() {
@@ -46,8 +35,7 @@ async function loadUserProfile() {
     const data = await res.json();
     const name = (data.first_name || '') + ' ' + (data.last_name || '');
     const initials = ((data.first_name || 'U')[0] + (data.last_name || 'S')[0]).toUpperCase();
-
-    const el = document.getElementById('sidebarName');
+    const el  = document.getElementById('sidebarName');
     const av1 = document.getElementById('sidebarAvatar');
     const av2 = document.getElementById('headerAvatar');
     if (el)  el.textContent  = name.trim() || 'User';
@@ -56,7 +44,7 @@ async function loadUserProfile() {
   } catch (e) { /* silent */ }
 }
 
-// ─── Load past quiz results ───
+// ─── Load past results ───
 async function loadPastResults() {
   try {
     const res = await fetch('/api/quiz/results', {
@@ -81,7 +69,7 @@ function renderPastResults(results) {
     const pct = Math.round((r.score / r.total) * 100);
     const cls = pct >= 70 ? 'high' : pct >= 40 ? 'mid' : 'low';
     const date = new Date(r.submitted_at).toLocaleDateString('en-IN', {
-      day:'2-digit', month:'short', year:'numeric'
+      day: '2-digit', month: 'short', year: 'numeric'
     });
     return `
       <tr>
@@ -97,53 +85,98 @@ function renderPastResults(results) {
     <table class="quiz-past-table">
       <thead>
         <tr>
-          <th>Subject</th>
-          <th>Score</th>
-          <th>Percentage</th>
-          <th>Date</th>
-          <th>Grade</th>
+          <th>Subject</th><th>Score</th><th>Percentage</th><th>Date</th><th>Grade</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
 
-// ─── START QUIZ ───
-async function startQuiz(subject) {
+// ─── STEP 1: Subject selected → Show difficulty screen ───
+function selectSubject(subject) {
   selectedSubject = subject;
 
-  // Show loading
+  const subjectNames = {
+    DSA: 'DSA — Data Structures & Algorithms',
+    DBMS: 'DBMS — Database Management Systems',
+    OS: 'OS — Operating Systems',
+    CN: 'CN — Computer Networks',
+    C: 'C Programming',
+    CPP: 'C++ Programming',
+    Java: 'Java Programming',
+    Python: 'Python Programming'
+  };
+
+  const titleEl = document.getElementById('diffSubjectTitle');
+  if (titleEl) titleEl.textContent = (subjectNames[subject] || subject) + ' 🎯';
+
+  showScreen('screenDifficulty');
+}
+
+// ─── Go back to subject selection ───
+function goBackToSubjects() {
+  clearInterval(timerInterval);
+  showScreen('screenSelect');
+  loadPastResults();
+}
+
+// ─── STEP 2: Difficulty selected → Generate & Start Quiz ───
+async function startQuiz(difficulty) {
+  selectedDifficulty = difficulty;
+
+  // Show quiz screen with loading state
   showScreen('screenQuiz');
-  document.getElementById('quizSubjectBadge').textContent = subject;
-  document.getElementById('qText').textContent = 'Loading questions...';
-  document.getElementById('qOptions').innerHTML = '<div class="quiz-loading"><div class="quiz-spinner"></div><span>Fetching questions...</span></div>';
+  document.getElementById('quizSubjectBadge').textContent = selectedSubject;
+
+  const diffBadge = document.getElementById('quizDiffBadge');
+  if (diffBadge) {
+    diffBadge.textContent = difficulty;
+    diffBadge.className = 'quiz-diff-badge diff-' + difficulty.toLowerCase();
+  }
+
+  document.getElementById('qText').textContent = 'AI is generating your questions...';
+  document.getElementById('qOptions').innerHTML = `
+    <div class="quiz-loading">
+      <div class="quiz-spinner"></div>
+      <div style="text-align:center">
+        <div style="font-weight:600;color:var(--text-primary);margin-bottom:4px">🤖 Generating ${difficulty} questions...</div>
+        <div style="font-size:0.82rem;color:var(--text-secondary)">Groq AI · Llama 3.3 70B · Unique every time</div>
+      </div>
+    </div>`;
+  document.getElementById('quizDotsRow').innerHTML = '';
 
   try {
-    const res = await fetch(`/api/quiz/questions/${encodeURIComponent(subject)}`, {
-      headers: { 'Authorization': 'Bearer ' + getToken() }
+    const res = await fetch('/api/quiz/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + getToken()
+      },
+      body: JSON.stringify({ subject: selectedSubject, difficulty })
     });
 
-    if (!res.ok) throw new Error('Failed to load questions');
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to generate questions');
+    }
+
     questions = await res.json();
 
     if (!questions || questions.length === 0) {
-      showToast('No questions found for ' + subject + '. Please add questions to the database.', 'error');
-      showScreen('screenSelect');
-      return;
+      throw new Error('No questions returned from AI');
     }
 
     // Initialize state
-    answers      = new Array(questions.length).fill(null);
-    currentIndex = 0;
+    answers       = new Array(questions.length).fill(null);
+    currentIndex  = 0;
     quizStartTime = Date.now();
 
-    // Build question dots
     buildDots();
     showQuestion(0);
 
   } catch (err) {
-    showToast('Error loading questions: ' + err.message, 'error');
-    showScreen('screenSelect');
+    showToast('Error: ' + err.message, 'error');
+    showScreen('screenDifficulty');
   }
 }
 
@@ -166,36 +199,33 @@ function showQuestion(index) {
   clearInterval(timerInterval);
   currentIndex = index;
   const q = questions[index];
+  const total = questions.length;
 
-  // Update progress
-  const pct = ((index + 1) / questions.length) * 100;
+  // Progress
+  const pct = ((index + 1) / total) * 100;
   document.getElementById('quizProgressFill').style.width = pct + '%';
-  document.getElementById('qProgress').textContent = `Question ${index + 1} of ${questions.length}`;
-  document.getElementById('qNumber').textContent = `Q${index + 1}`;
-  document.getElementById('qText').textContent = q.question;
+  document.getElementById('qProgress').textContent = `Question ${index + 1} of ${total}`;
+  document.getElementById('qNumber').textContent   = `Q${index + 1}`;
+  document.getElementById('qText').textContent     = q.question;
 
-  // Update dots
   updateDots();
 
-  // Render options
+  // Options
   const opts = document.getElementById('qOptions');
   const keys = ['A', 'B', 'C', 'D'];
   const optTexts = [q.option_a, q.option_b, q.option_c, q.option_d];
 
   opts.innerHTML = keys.map((k, i) => `
     <button class="quiz-option ${answers[index] === k ? 'selected' : ''}"
-            onclick="selectOption('${k}', this)"
-            id="opt_${k}">
+            onclick="selectOption('${k}', this)">
       <span class="quiz-option-key">${k}</span>
       <span>${optTexts[i] || ''}</span>
     </button>
   `).join('');
 
-  // Nav buttons
   document.getElementById('btnPrev').disabled = (index === 0);
-  document.getElementById('btnNext').textContent = (index === questions.length - 1) ? 'Submit Quiz ✓' : 'Next →';
+  document.getElementById('btnNext').textContent = (index === total - 1) ? 'Submit Quiz ✓' : 'Next →';
 
-  // Start timer
   startTimer(index);
 }
 
@@ -210,12 +240,7 @@ function startTimer(questionIndex) {
 
     if (timeLeft <= 0) {
       clearInterval(timerInterval);
-      // Auto-skip: mark as null (skipped due to timeout)
-      if (answers[questionIndex] === null) {
-        answers[questionIndex] = null; // already null = skipped
-      }
       showToast("⏰ Time's up! Moving to next question.", 'warn');
-
       setTimeout(() => {
         if (questionIndex < questions.length - 1) {
           showQuestion(questionIndex + 1);
@@ -228,20 +253,17 @@ function startTimer(questionIndex) {
 }
 
 function updateTimerDisplay() {
-  const el = document.getElementById('timerDisplay');
+  const el   = document.getElementById('timerDisplay');
   const wrap = document.getElementById('quizTimer');
   if (!el) return;
-
   el.textContent = timeLeft;
-
   wrap.className = 'quiz-timer';
-  if (timeLeft <= 10) wrap.classList.add('danger');
+  if (timeLeft <= 10)      wrap.classList.add('danger');
   else if (timeLeft <= 20) wrap.classList.add('warning');
 }
 
 // ─── Select Option ───
 function selectOption(key, btnEl) {
-  // Deselect all
   document.querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected'));
   btnEl.classList.add('selected');
   answers[currentIndex] = key;
@@ -253,10 +275,9 @@ function updateDots() {
   const dots = document.querySelectorAll('.quiz-dot');
   dots.forEach((dot, i) => {
     dot.className = 'quiz-dot';
-    if (i === currentIndex) dot.classList.add('current');
-    else if (answers[i] !== null) dot.classList.add('answered');
-    // If we passed it without answering
-    else if (i < currentIndex && answers[i] === null) dot.classList.add('skipped');
+    if (i === currentIndex)                            dot.classList.add('current');
+    else if (answers[i] !== null)                      dot.classList.add('answered');
+    else if (i < currentIndex && answers[i] === null)  dot.classList.add('skipped');
   });
 }
 
@@ -272,14 +293,11 @@ function nextQuestion() {
 
 function prevQuestion() {
   clearInterval(timerInterval);
-  if (currentIndex > 0) {
-    showQuestion(currentIndex - 1);
-  }
+  if (currentIndex > 0) showQuestion(currentIndex - 1);
 }
 
 function skipQuestion() {
   clearInterval(timerInterval);
-  // Leave answer as null
   if (currentIndex < questions.length - 1) {
     showQuestion(currentIndex + 1);
   } else {
@@ -296,15 +314,13 @@ function jumpToQuestion(index) {
 async function submitQuiz() {
   clearInterval(timerInterval);
 
-  // Calculate score locally first for display
   let correct = 0, wrong = 0, skipped = 0;
   questions.forEach((q, i) => {
-    if (answers[i] === null) skipped++;
+    if (answers[i] === null)              skipped++;
     else if (answers[i] === q.correct_option) correct++;
-    else wrong++;
+    else                                  wrong++;
   });
 
-  // Save to server
   try {
     await fetch('/api/quiz/submit', {
       method: 'POST',
@@ -314,6 +330,7 @@ async function submitQuiz() {
       },
       body: JSON.stringify({
         subject: selectedSubject,
+        difficulty: selectedDifficulty,
         answers,
         questions,
         score: correct,
@@ -329,14 +346,14 @@ async function submitQuiz() {
 function showResult(correct, wrong, skipped) {
   showScreen('screenResult');
 
-  const total   = questions.length;
-  const pct     = Math.round((correct / total) * 100);
-  const grade   = getGradeLabel(pct);
-  const emoji   = pct >= 80 ? '🏆' : pct >= 60 ? '🎉' : pct >= 40 ? '👍' : '📚';
+  const total = questions.length;
+  const pct   = Math.round((correct / total) * 100);
+  const grade = getGradeLabel(pct);
+  const emoji = pct >= 80 ? '🏆' : pct >= 60 ? '🎉' : pct >= 40 ? '👍' : '📚';
 
   document.getElementById('resultEmoji').textContent   = emoji;
   document.getElementById('resultTitle').textContent   = pct >= 60 ? 'Great Performance!' : 'Quiz Complete!';
-  document.getElementById('resultSubject').textContent = selectedSubject;
+  document.getElementById('resultSubject').textContent = `${selectedSubject} — ${selectedDifficulty}`;
   document.getElementById('scoreVal').textContent      = correct;
   document.getElementById('resCorrect').textContent    = correct;
   document.getElementById('resWrong').textContent      = wrong;
@@ -344,18 +361,21 @@ function showResult(correct, wrong, skipped) {
   document.getElementById('resPercent').textContent    = pct + '%';
   document.getElementById('resultGrade').textContent   = grade;
 
+  // Score label shows /10
+  const scoreLabel = document.querySelector('.quiz-score-label');
+  if (scoreLabel) scoreLabel.textContent = `/ ${total}`;
+
   // Animate circle
-  const circumference = 2 * Math.PI * 52; // ≈ 326.7
+  const circumference = 2 * Math.PI * 52;
   const offset = circumference - (pct / 100) * circumference;
   setTimeout(() => {
     const circle = document.getElementById('scoreCircle');
     if (circle) {
       circle.style.transition = 'stroke-dashoffset 1s ease';
       circle.style.strokeDashoffset = offset;
-      // Color based on score
-      if (pct >= 70) circle.style.stroke = '#10B981';
+      if (pct >= 70)      circle.style.stroke = '#10B981';
       else if (pct >= 40) circle.style.stroke = '#F97316';
-      else circle.style.stroke = '#EF4444';
+      else                circle.style.stroke = '#EF4444';
     }
   }, 200);
 }
@@ -381,10 +401,10 @@ function reviewAnswers() {
   }
 
   list.innerHTML = questions.map((q, i) => {
-    const userAns   = answers[i];
-    const correct   = q.correct_option;
-    const optMap    = { A: q.option_a, B: q.option_b, C: q.option_c, D: q.option_d };
-    let userTag = '';
+    const userAns = answers[i];
+    const correct = q.correct_option;
+    const optMap  = { A: q.option_a, B: q.option_b, C: q.option_c, D: q.option_d };
+    let userTag   = '';
 
     if (userAns === null) {
       userTag = `<span class="review-ans-tag skipped">⏭️ Skipped</span>`;
@@ -410,7 +430,7 @@ function reviewAnswers() {
 // ─── Retake / Go Home ───
 function retakeQuiz() {
   document.getElementById('reviewSection').style.display = 'none';
-  startQuiz(selectedSubject);
+  startQuiz(selectedDifficulty);
 }
 
 function goHome() {
@@ -429,13 +449,12 @@ function closeQuit() {
 function quitQuiz() {
   clearInterval(timerInterval);
   document.getElementById('quitModal').style.display = 'none';
-  showScreen('screenSelect');
-  loadPastResults();
+  showScreen('screenDifficulty');
 }
 
 // ─── Screen Switcher ───
 function showScreen(id) {
-  ['screenSelect', 'screenQuiz', 'screenResult'].forEach(s => {
+  ['screenSelect', 'screenDifficulty', 'screenQuiz', 'screenResult'].forEach(s => {
     const el = document.getElementById(s);
     if (el) el.style.display = (s === id) ? 'block' : 'none';
   });
@@ -447,8 +466,8 @@ function showToast(msg, type = 'info') {
   if (!t) return;
   t.textContent = msg;
   t.className = 'toast show';
-  if (type === 'error') t.style.background = '#EF4444';
+  if (type === 'error')     t.style.background = '#EF4444';
   else if (type === 'warn') t.style.background = '#F97316';
-  else t.style.background = '#10B981';
+  else                      t.style.background = '#10B981';
   setTimeout(() => t.classList.remove('show'), 3000);
 }
