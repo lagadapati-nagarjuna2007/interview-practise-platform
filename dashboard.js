@@ -262,7 +262,7 @@ document.getElementById('btnStartCoding').addEventListener('click', () => {
 });
 
 document.getElementById('btnStartInterview').addEventListener('click', () => {
-  showToast('Interview section coming soon! 🎙️');
+  window.location.href = 'interview.html';
 });
 
 // ─── Nav item click highlight ───

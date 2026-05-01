@@ -338,6 +338,262 @@ app.get('/api/quiz/results', async (req, res) => {
   res.json(data);
 });
 
+// ═══════════════════════════════════════════════
+//  INTERVIEW ROUTES
+// ═══════════════════════════════════════════════
+
+// POST /api/interview/questions — AI question generation via Groq
+app.post('/api/interview/questions', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { subject, difficulty } = req.body;
+  if (!subject || !difficulty) {
+    return res.status(400).json({ error: 'subject and difficulty are required' });
+  }
+
+  const subjectFullNames = {
+    DSA: 'Data Structures and Algorithms',
+    DBMS: 'Database Management Systems',
+    OS: 'Operating Systems',
+    CN: 'Computer Networks',
+    C: 'C Programming',
+    CPP: 'C++ Programming',
+    Java: 'Java Programming',
+    Python: 'Python Programming'
+  };
+
+  const difficultyGuide = {
+    Easy: 'basic conceptual questions, definitions, simple explanations, beginner understanding',
+    Medium: 'intermediate concepts, application of knowledge, real-world scenarios, moderate depth',
+    Hard: 'advanced concepts, tricky edge cases, deep technical details, expert-level questions'
+  };
+
+  const subjectFull = subjectFullNames[subject] || subject;
+  const diffGuide = difficultyGuide[difficulty] || 'moderate depth';
+
+  // Generate 10 questions: ~3 easy, ~4 medium, ~3 hard spread within the chosen difficulty tier
+  const prompt = `Generate exactly 10 interview questions for a technical interview on ${subjectFull} at ${difficulty} level.
+
+Difficulty guide: ${diffGuide}
+
+RULES:
+- Questions must be open-ended (no MCQ) — the candidate types a written answer
+- Questions should test conceptual understanding, not just definitions
+- Each question must have a "category" label (e.g. "Trees", "Concurrency", "Normalization")
+- Each question must have a "difficulty" field: exactly "${difficulty}"
+- Questions must be unique, diverse, and interview-realistic
+- For ${subjectFull}: mix of theory, comparison, scenario-based questions
+
+Respond ONLY with a valid JSON array. No explanation, no markdown, no code blocks. Raw JSON only:
+[
+  {
+    "question": "Explain how a hash table handles collisions. What are the trade-offs?",
+    "category": "Hashing",
+    "difficulty": "${difficulty}"
+  }
+]
+
+Generate all 10 questions now:`;
+
+  try {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a senior technical interviewer. You generate realistic, thoughtful interview questions. Always respond with valid JSON arrays only, no markdown, no extra text.'
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.8,
+        max_tokens: 2000
+      })
+    });
+
+    if (!groqRes.ok) {
+      const errText = await groqRes.text();
+      return res.status(500).json({ error: 'Groq API error: ' + groqRes.status });
+    }
+
+    const groqData = await groqRes.json();
+    let content = groqData.choices?.[0]?.message?.content || '';
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+
+    const startIdx = content.indexOf('[');
+    const endIdx = content.lastIndexOf(']');
+    if (startIdx === -1 || endIdx === -1) throw new Error('No valid JSON array found');
+    content = content.substring(startIdx, endIdx + 1);
+
+    const rawQuestions = JSON.parse(content);
+    if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) throw new Error('Invalid questions format');
+
+    const validated = rawQuestions.slice(0, 10).map((q, i) => ({
+      id: `iq_${Date.now()}_${i}`,
+      question: q.question || `Question ${i + 1}`,
+      category: q.category || subject,
+      difficulty: q.difficulty || difficulty
+    }));
+
+    res.json(validated);
+
+  } catch (err) {
+    console.error('Interview questions error:', err.message);
+    res.status(500).json({ error: 'Failed to generate questions: ' + err.message });
+  }
+});
+
+// POST /api/interview/evaluate — AI evaluation of written answers
+app.post('/api/interview/evaluate', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { subject, difficulty, answers } = req.body;
+  if (!subject || !difficulty || !Array.isArray(answers)) {
+    return res.status(400).json({ error: 'subject, difficulty, and answers array are required' });
+  }
+
+  const subjectFullNames = {
+    DSA: 'Data Structures and Algorithms',
+    DBMS: 'Database Management Systems',
+    OS: 'Operating Systems',
+    CN: 'Computer Networks',
+    C: 'C Programming',
+    CPP: 'C++ Programming',
+    Java: 'Java Programming',
+    Python: 'Python Programming'
+  };
+
+  const subjectFull = subjectFullNames[subject] || subject;
+
+  // Build the evaluation prompt
+  const answersText = answers.map((a, i) => {
+    if (a.skipped || !a.userAnswer || a.userAnswer.trim() === '') {
+      return `Q${i + 1}: ${a.question}\nAnswer: [SKIPPED / NO ANSWER]`;
+    }
+    return `Q${i + 1}: ${a.question}\nAnswer: ${a.userAnswer}`;
+  }).join('\n\n');
+
+  const prompt = `You are a senior ${subjectFull} interviewer evaluating a candidate's written interview answers.
+
+Subject: ${subjectFull}
+Difficulty: ${difficulty}
+
+Evaluate each of the following 10 answers and give:
+1. A score from 0 to 10 (10 = perfect, 0 = skipped/completely wrong)
+2. Brief constructive feedback (2-3 sentences max)
+
+Scoring guide:
+- 9-10: Complete, accurate, shows deep understanding
+- 7-8: Mostly correct, minor gaps
+- 5-6: Partially correct, key points missing
+- 3-4: Shows some understanding but significant errors
+- 1-2: Very poor, mostly wrong
+- 0: Skipped or blank
+
+${answersText}
+
+Respond ONLY with a valid JSON object. No markdown, no extra text:
+{
+  "totalScore": <number 0-10, average of all scores rounded>,
+  "maxScore": 10,
+  "breakdown": [
+    {
+      "question": "<question text>",
+      "userAnswer": "<user answer or empty>",
+      "score": <0-10>,
+      "feedback": "<2-3 sentence feedback>",
+      "skipped": <true/false>
+    }
+  ]
+}`;
+
+  try {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a strict but fair technical interviewer. Evaluate answers honestly. Always respond with valid JSON only, no markdown, no extra text.'
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.4,
+        max_tokens: 3000
+      })
+    });
+
+    if (!groqRes.ok) {
+      const errText = await groqRes.text();
+      return res.status(500).json({ error: 'Groq API error: ' + groqRes.status });
+    }
+
+    const groqData = await groqRes.json();
+    let content = groqData.choices?.[0]?.message?.content || '';
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+
+    const startIdx = content.indexOf('{');
+    const endIdx = content.lastIndexOf('}');
+    if (startIdx === -1 || endIdx === -1) throw new Error('No valid JSON found');
+    content = content.substring(startIdx, endIdx + 1);
+
+    const evalResult = JSON.parse(content);
+
+    // Save to DB — update interview_score_avg
+    const scoreNum = Math.round((evalResult.totalScore / 10) * 100);
+    const { data: currentStats } = await supabase
+      .from('user_stats')
+      .select('interview_score_avg')
+      .eq('user_id', user.id)
+      .single();
+
+    const newAvg = currentStats
+      ? Math.round((currentStats.interview_score_avg + scoreNum) / 2)
+      : scoreNum;
+
+    await supabase
+      .from('user_stats')
+      .update({ interview_score_avg: newAvg })
+      .eq('user_id', user.id);
+
+    // Update weak topics if score < 60%
+    if (scoreNum < 60) {
+      const iconMap = { DSA: '🌳', DBMS: '🗄️', OS: '🖥️', CN: '🌐', C: '⚙️', CPP: '🔷', Java: '☕', Python: '🐍' };
+      const topicName = `${subject} Interview`;
+      const { data: existing } = await supabase
+        .from('weak_topics')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('topic_name', topicName)
+        .single();
+
+      if (existing) {
+        await supabase.from('weak_topics').update({ score_percentage: scoreNum, icon: iconMap[subject] || '🎤' }).eq('id', existing.id);
+      } else {
+        await supabase.from('weak_topics').insert({ user_id: user.id, topic_name: topicName, score_percentage: scoreNum, icon: iconMap[subject] || '🎤' });
+      }
+    }
+
+    res.json(evalResult);
+
+  } catch (err) {
+    console.error('Interview evaluate error:', err.message);
+    res.status(500).json({ error: 'Failed to evaluate answers: ' + err.message });
+  }
+});
+
 // ─── Fallback ───
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
 

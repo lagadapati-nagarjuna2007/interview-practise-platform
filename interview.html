@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>InterviewOS – Interview</title>
+  <link rel="stylesheet" href="dashboard.css" />
+  <link rel="stylesheet" href="interview.css" />
+</head>
+<body>
+<div class="dashboard-layout">
+
+  <!-- ══════════════ SIDEBAR ══════════════ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
+      </div>
+      <div>
+        <div class="sidebar-brand-text">Interview<span>OS</span></div>
+        <div class="sidebar-brand-sub">AI Mock Interview Platform</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="dashboard.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Coding Questions
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Quiz
+      </a>
+      <a class="nav-item active" href="interview.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Interview
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        Company Prep
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Progress
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Improve Me (AI Roadmap)
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+        Bookmarks
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Reports
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Settings
+      </a>
+    </nav>
+    <div class="sidebar-user" id="sidebarUser">
+      <div class="sidebar-avatar" id="sidebarAvatar">SN</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Loading...</div>
+        <div class="sidebar-user-plan" id="sidebarPlan">Free Plan 🔥</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════ MAIN ══════════════ -->
+  <main class="main-content" style="padding: 32px 36px;">
+
+    <!-- ── SCREEN 1: Subject Selection ── -->
+    <section id="screen-select" class="screen active">
+      <div class="screen-header">
+        <h1>Interview Practice <span>💬</span></h1>
+        <p>Answer interview questions in writing and get AI-based evaluation.</p>
+      </div>
+
+      <div class="subject-grid">
+        <div class="subject-card" data-subject="DSA">
+          <div class="subject-icon" style="background:rgba(108,79,232,0.12);color:#6C4FE8">🌳</div>
+          <div class="subject-name">DSA</div>
+          <div class="subject-desc">Data Structures & Algorithms</div>
+        </div>
+        <div class="subject-card" data-subject="DBMS">
+          <div class="subject-icon" style="background:rgba(29,158,117,0.12);color:#1D9E75">🗄️</div>
+          <div class="subject-name">DBMS</div>
+          <div class="subject-desc">Database Management Systems</div>
+        </div>
+        <div class="subject-card" data-subject="OS">
+          <div class="subject-icon" style="background:rgba(234,88,30,0.12);color:#EA581E">🖥️</div>
+          <div class="subject-name">OS</div>
+          <div class="subject-desc">Operating Systems</div>
+        </div>
+        <div class="subject-card" data-subject="CN">
+          <div class="subject-icon" style="background:rgba(59,130,246,0.12);color:#3B82F6">🌐</div>
+          <div class="subject-name">CN</div>
+          <div class="subject-desc">Computer Networks</div>
+        </div>
+        <div class="subject-card" data-subject="CPP">
+          <div class="subject-icon" style="background:rgba(168,85,247,0.12);color:#A855F7">🔷</div>
+          <div class="subject-name">C++</div>
+          <div class="subject-desc">C++ Programming</div>
+        </div>
+        <div class="subject-card" data-subject="Java">
+          <div class="subject-icon" style="background:rgba(239,68,68,0.12);color:#EF4444">☕</div>
+          <div class="subject-name">Java</div>
+          <div class="subject-desc">Java Programming</div>
+        </div>
+        <div class="subject-card" data-subject="Python">
+          <div class="subject-icon" style="background:rgba(234,179,8,0.12);color:#EAB308">🐍</div>
+          <div class="subject-name">Python</div>
+          <div class="subject-desc">Python Programming</div>
+        </div>
+        <div class="subject-card" data-subject="C">
+          <div class="subject-icon" style="background:rgba(20,184,166,0.12);color:#14B8A6">⚙️</div>
+          <div class="subject-name">C</div>
+          <div class="subject-desc">C Programming</div>
+        </div>
+      </div>
+
+      <div class="difficulty-row" id="difficulty-row" style="display:none">
+        <div class="diff-label">Select Difficulty:</div>
+        <div class="diff-btns">
+          <button class="diff-btn easy" data-diff="Easy">🟢 Easy</button>
+          <button class="diff-btn medium" data-diff="Medium">🟡 Medium</button>
+          <button class="diff-btn hard" data-diff="Hard">🔴 Hard</button>
+        </div>
+        <button class="btn-start" id="btn-start" disabled>Start Interview →</button>
+      </div>
+
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-icon">❓</div>
+          <div class="info-text"><strong>10 Questions</strong><br>Per session</div>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">⏱️</div>
+          <div class="info-text"><strong>3 Minutes</strong><br>Per question</div>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">🤖</div>
+          <div class="info-text"><strong>AI Evaluated</strong><br>Score out of 10</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SCREEN 2: Loading ── -->
+    <section id="screen-loading" class="screen">
+      <div class="loading-box">
+        <div class="loading-spinner"></div>
+        <h2>Generating Interview Questions...</h2>
+        <p id="loading-subject-text">Preparing your <strong></strong> interview</p>
+        <div class="loading-dots"><span></span><span></span><span></span></div>
+      </div>
+    </section>
+
+    <!-- ── SCREEN 3: Interview ── -->
+    <section id="screen-interview" class="screen">
+      <div class="interview-topbar">
+        <div class="itb-left">
+          <span class="itb-subject" id="itb-subject-label"></span>
+          <span class="itb-diff" id="itb-diff-label"></span>
+        </div>
+        <div class="itb-center">
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <div class="progress-label" id="progress-label">Question 1 of 10</div>
+        </div>
+        <div class="itb-right">
+          <div class="timer-box" id="timer-box">
+            <span class="timer-icon">⏱</span>
+            <span id="timer-display">3:00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-area">
+        <div class="q-meta">
+          <span class="q-number" id="q-number">Q1</span>
+          <span class="q-difficulty-badge" id="q-diff-badge"></span>
+          <span class="q-category" id="q-category"></span>
+        </div>
+        <div class="q-text" id="q-text">Loading question...</div>
+
+        <div class="answer-area">
+          <label class="ans-label">Your Answer:</label>
+          <textarea id="answer-input" class="answer-textarea" placeholder="Type your answer here... Be as detailed as possible. You have 3 minutes." rows="8"></textarea>
+          <div class="word-count" id="word-count">0 words</div>
+        </div>
+
+        <div class="q-actions">
+          <button class="btn-skip" id="btn-skip">Skip Question →</button>
+          <button class="btn-submit-ans" id="btn-submit-ans">Submit & Next →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SCREEN 4: Evaluating ── -->
+    <section id="screen-evaluating" class="screen">
+      <div class="loading-box">
+        <div class="loading-spinner purple"></div>
+        <h2>AI is Evaluating Your Answers...</h2>
+        <p>Analyzing your responses for accuracy, depth and clarity</p>
+        <div class="eval-steps">
+          <div class="eval-step active" id="estep1">📝 Reading your answers...</div>
+          <div class="eval-step" id="estep2">🧠 Checking technical accuracy...</div>
+          <div class="eval-step" id="estep3">📊 Calculating scores...</div>
+          <div class="eval-step" id="estep4">✅ Finalizing feedback...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SCREEN 5: Results ── -->
+    <section id="screen-results" class="screen">
+      <div class="results-header">
+        <div class="results-score-circle" id="score-circle">
+          <div class="score-inner">
+            <div class="score-number" id="score-number">0</div>
+            <div class="score-label">out of 10</div>
+          </div>
+        </div>
+        <div class="results-meta">
+          <h2 id="result-title">Interview Complete!</h2>
+          <p id="result-subtitle"></p>
+          <div class="result-tags">
+            <span class="result-tag" id="res-subject"></span>
+            <span class="result-tag" id="res-diff"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="results-breakdown" id="results-breakdown">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="results-actions">
+        <button class="btn-retry" id="btn-retry">🔄 Try Again</button>
+        <button class="btn-dashboard" id="btn-dashboard">🏠 Dashboard</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+  <script src="interview.js"></script>
+</body>
+</html>
