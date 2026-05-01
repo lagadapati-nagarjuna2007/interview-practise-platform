@@ -16,7 +16,7 @@ const supabase = createClient(
 // ─── Middleware ───
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
 // ─── Helper: extract user from Authorization header ───
 async function getUser(req) {
@@ -211,9 +211,127 @@ app.post('/api/dashboard/goals', async (req, res) => {
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });
+// ═══════════════════════════════════════════════
+//  QUIZ ROUTES — Paste these into server.js
+//  (Add BEFORE the last app.get('/') fallback)
+// ═══════════════════════════════════════════════
 
+// GET /api/quiz/questions/:subject
+// Returns 30 random questions for the given subject
+app.get('/api/quiz/questions/:subject', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { subject } = req.params;
+
+  const { data, error } = await supabase
+    .from('quiz_questions')
+    .select('id, question, option_a, option_b, option_c, option_d, correct_option')
+    .eq('subject', subject);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  if (!data || data.length === 0) {
+    return res.status(404).json({ error: 'No questions found for subject: ' + subject });
+  }
+
+  // Shuffle and pick 30
+  const shuffled = data.sort(() => Math.random() - 0.5).slice(0, 30);
+  res.json(shuffled);
+});
+
+// POST /api/quiz/submit
+// Saves quiz result and updates user_stats
+app.post('/api/quiz/submit', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { subject, answers, questions, score, total } = req.body;
+
+  // 1. Save result
+  const { data: result, error: saveErr } = await supabase
+    .from('quiz_results')
+    .insert({
+      user_id: user.id,
+      subject,
+      score,
+      total,
+      answers: answers,
+      submitted_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (saveErr) return res.status(500).json({ error: saveErr.message });
+
+  // 2. Update user_stats: recalculate quiz_score_avg
+  const { data: allResults } = await supabase
+    .from('quiz_results')
+    .select('score, total')
+    .eq('user_id', user.id);
+
+  if (allResults && allResults.length > 0) {
+    const avgScore = allResults.reduce((sum, r) => sum + Math.round((r.score / r.total) * 100), 0) / allResults.length;
+
+    await supabase
+      .from('user_stats')
+      .update({ quiz_score_avg: Math.round(avgScore) })
+      .eq('user_id', user.id);
+  }
+
+  // 3. Update weak_topics: if score < 60%, mark as weak
+  const pct = Math.round((score / total) * 100);
+  if (pct < 60) {
+    // Check if topic already exists
+    const { data: existing } = await supabase
+      .from('weak_topics')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('topic_name', subject)
+      .single();
+
+    const iconMap = {
+      DSA: '🌳', DBMS: '🗄️', OS: '🖥️', CN: '🌐',
+      C: '⚙️', CPP: '🔷', Java: '☕', Python: '🐍'
+    };
+
+    if (existing) {
+      await supabase
+        .from('weak_topics')
+        .update({ score_percentage: pct, icon: iconMap[subject] || '📚' })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('weak_topics')
+        .insert({
+          user_id: user.id,
+          topic_name: subject,
+          score_percentage: pct,
+          icon: iconMap[subject] || '📚'
+        });
+    }
+  }
+
+  res.json({ success: true, score, total, percentage: pct, result });
+});
+// GET /api/quiz/results
+// Returns past quiz results for current user
+app.get('/api/quiz/results', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { data, error } = await supabase
+    .from('quiz_results')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('submitted_at', { ascending: false })
+    .limit(20);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
 // ─── Fallback: serve index ───
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
 
 app.listen(PORT, async () => {
   console.log(`🚀 InterviewOS server running at http://localhost:${PORT}`);

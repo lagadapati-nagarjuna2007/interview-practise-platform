@@ -252,6 +252,19 @@ document.getElementById('goalModalSubmit').addEventListener('click', async () =>
   }
 });
 
+// ─── Feature Card Buttons ───
+document.getElementById('btnStartQuiz').addEventListener('click', () => {
+  window.location.href = 'quiz.html';
+});
+
+document.getElementById('btnStartCoding').addEventListener('click', () => {
+  showToast('Coding section coming soon! 🚀');
+});
+
+document.getElementById('btnStartInterview').addEventListener('click', () => {
+  showToast('Interview section coming soon! 🎙️');
+});
+
 // ─── Nav item click highlight ───
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', (e) => {
