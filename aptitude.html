@@ -31,7 +31,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
         Coding Questions
       </a>
-      <a class="nav-item active" href="quiz.html">
+      <a class="nav-item" href="quiz.html">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
         Quiz
       </a>
@@ -39,7 +39,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
         Interview
       </a>
-      <a class="nav-item" href="aptitude.html">
+      <a class="nav-item active" href="aptitude.html">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
         Aptitude & Reasoning
       </a>
@@ -81,80 +81,35 @@
   <main class="main-content">
 
     <!-- ══ SCREEN 1: SUBJECT SELECTION ══ -->
-    <div id="screenSelect">
-      <header class="header">
-        <div class="header-greeting">
-          <h1>Quiz Arena 🎯</h1>
-          <p>Choose a subject and test your knowledge with AI-generated questions</p>
-        </div>
-        <div class="header-actions">
-          <div class="header-avatar" id="headerAvatar">SN</div>
-        </div>
-      </header>
+    <div id="screenSelect" class="screen active">
+      <div class="screen-header">
+        <h1>Aptitude, Verbal & Reasoning</h1>
+        <p>Prepare for your assessment with AI generated questions.</p>
+      </div>
 
       <div class="quiz-subject-grid">
-        <div class="quiz-subject-card" data-subject="DSA">
-          <div class="qsc-icon" style="background:linear-gradient(135deg,#6C4FE8,#9B7FFF)">🌳</div>
-          <div class="qsc-name">DSA</div>
-          <div class="qsc-full">Data Structures & Algorithms</div>
-          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
-          <button class="qsc-btn" onclick="selectSubject('DSA')">Start Quiz →</button>
+        <div class="quiz-subject-card" data-subject="Aptitude">
+          <div class="qsc-icon" style="background:linear-gradient(135deg,#EF4444,#F87171)">🧮</div>
+          <div class="qsc-name">Aptitude</div>
+          <div class="qsc-full">Quantitative Aptitude</div>
+          <div class="qsc-meta">10 Questions · Per Level</div>
+          <button class="qsc-btn" onclick="selectSubject('Aptitude')">Start Test →</button>
         </div>
 
-        <div class="quiz-subject-card" data-subject="DBMS">
-          <div class="qsc-icon" style="background:linear-gradient(135deg,#10B981,#34D399)">🗄️</div>
-          <div class="qsc-name">DBMS</div>
-          <div class="qsc-full">Database Management Systems</div>
-          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
-          <button class="qsc-btn" onclick="selectSubject('DBMS')">Start Quiz →</button>
+        <div class="quiz-subject-card" data-subject="Verbal">
+          <div class="qsc-icon" style="background:linear-gradient(135deg,#8B5CF6,#A78BFA)">📝</div>
+          <div class="qsc-name">Verbal</div>
+          <div class="qsc-full">Verbal Ability</div>
+          <div class="qsc-meta">10 Questions · Per Level</div>
+          <button class="qsc-btn" onclick="selectSubject('Verbal')">Start Test →</button>
         </div>
 
-        <div class="quiz-subject-card" data-subject="OS">
-          <div class="qsc-icon" style="background:linear-gradient(135deg,#F97316,#FBBF24)">🖥️</div>
-          <div class="qsc-name">OS</div>
-          <div class="qsc-full">Operating Systems</div>
-          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
-          <button class="qsc-btn" onclick="selectSubject('OS')">Start Quiz →</button>
-        </div>
-
-        <div class="quiz-subject-card" data-subject="CN">
-          <div class="qsc-icon" style="background:linear-gradient(135deg,#3B82F6,#60A5FA)">🌐</div>
-          <div class="qsc-name">CN</div>
-          <div class="qsc-full">Computer Networks</div>
-          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
-          <button class="qsc-btn" onclick="selectSubject('CN')">Start Quiz →</button>
-        </div>
-
-        <div class="quiz-subject-card" data-subject="C">
-          <div class="qsc-icon" style="background:linear-gradient(135deg,#EF4444,#F87171)">⚙️</div>
-          <div class="qsc-name">C</div>
-          <div class="qsc-full">C Programming</div>
-          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
-          <button class="qsc-btn" onclick="selectSubject('C')">Start Quiz →</button>
-        </div>
-
-        <div class="quiz-subject-card" data-subject="CPP">
-          <div class="qsc-icon" style="background:linear-gradient(135deg,#8B5CF6,#A78BFA)">🔷</div>
-          <div class="qsc-name">C++</div>
-          <div class="qsc-full">C++ Programming</div>
-          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
-          <button class="qsc-btn" onclick="selectSubject('CPP')">Start Quiz →</button>
-        </div>
-
-        <div class="quiz-subject-card" data-subject="Java">
-          <div class="qsc-icon" style="background:linear-gradient(135deg,#F59E0B,#FCD34D)">☕</div>
-          <div class="qsc-name">Java</div>
-          <div class="qsc-full">Java Programming</div>
-          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
-          <button class="qsc-btn" onclick="selectSubject('Java')">Start Quiz →</button>
-        </div>
-
-        <div class="quiz-subject-card" data-subject="Python">
-          <div class="qsc-icon" style="background:linear-gradient(135deg,#14B8A6,#2DD4BF)">🐍</div>
-          <div class="qsc-name">Python</div>
-          <div class="qsc-full">Python Programming</div>
-          <div class="qsc-meta">10 Questions · Per Level · AI Generated</div>
-          <button class="qsc-btn" onclick="selectSubject('Python')">Start Quiz →</button>
+        <div class="quiz-subject-card" data-subject="Reasoning">
+          <div class="qsc-icon" style="background:linear-gradient(135deg,#F59E0B,#FCD34D)">🧠</div>
+          <div class="qsc-name">Reasoning</div>
+          <div class="qsc-full">Logical Reasoning</div>
+          <div class="qsc-meta">10 Questions · Per Level</div>
+          <button class="qsc-btn" onclick="selectSubject('Reasoning')">Start Test →</button>
         </div>
       </div>
 
@@ -197,12 +152,12 @@
             </div>
             <div class="diff-stat-divider"></div>
             <div class="diff-stat">
-              <span class="diff-stat-val">1 min</span>
+              <span class="diff-stat-val">2 min</span>
               <span class="diff-stat-label">Per Question</span>
             </div>
             <div class="diff-stat-divider"></div>
             <div class="diff-stat">
-              <span class="diff-stat-val">10 min</span>
+              <span class="diff-stat-val">20 min</span>
               <span class="diff-stat-label">Total Time</span>
             </div>
           </div>
@@ -223,12 +178,12 @@
             </div>
             <div class="diff-stat-divider"></div>
             <div class="diff-stat">
-              <span class="diff-stat-val">1 min</span>
+              <span class="diff-stat-val">2 min</span>
               <span class="diff-stat-label">Per Question</span>
             </div>
             <div class="diff-stat-divider"></div>
             <div class="diff-stat">
-              <span class="diff-stat-val">10 min</span>
+              <span class="diff-stat-val">20 min</span>
               <span class="diff-stat-label">Total Time</span>
             </div>
           </div>
@@ -249,12 +204,12 @@
             </div>
             <div class="diff-stat-divider"></div>
             <div class="diff-stat">
-              <span class="diff-stat-val">1 min</span>
+              <span class="diff-stat-val">2 min</span>
               <span class="diff-stat-label">Per Question</span>
             </div>
             <div class="diff-stat-divider"></div>
             <div class="diff-stat">
-              <span class="diff-stat-val">10 min</span>
+              <span class="diff-stat-val">20 min</span>
               <span class="diff-stat-label">Total Time</span>
             </div>
           </div>
@@ -287,7 +242,7 @@
         <div class="quiz-topbar-right">
           <div class="quiz-timer" id="quizTimer">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            <span id="timerDisplay">60</span>s
+            <span id="timerDisplay">120</span>s
           </div>
         </div>
       </div>
@@ -389,6 +344,6 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="quiz.js"></script>
+<script src="aptitude.js"></script>
 </body>
 </html>

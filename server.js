@@ -207,7 +207,7 @@ Generate all 10 questions now:`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
         messages: [
           {
             role: 'system',
@@ -318,7 +318,7 @@ app.post('/api/quiz/submit', async (req, res) => {
   const pct = Math.round((score / total) * 100);
   if (pct < 60) {
     const { data: existing } = await supabase.from('weak_topics').select('id').eq('user_id', user.id).eq('topic_name', subject).single();
-    const iconMap = { DSA: '🌳', DBMS: '🗄️', OS: '🖥️', CN: '🌐', C: '⚙️', CPP: '🔷', Java: '☕', Python: '🐍' };
+    const iconMap = { DSA: '🌳', DBMS: '🗄️', OS: '🖥️', CN: '🌐', C: '⚙️', CPP: '🔷', Java: '☕', Python: '🐍', Aptitude: '🧮', Verbal: '📝', Reasoning: '🧠' };
     if (existing) {
       await supabase.from('weak_topics').update({ score_percentage: pct, icon: iconMap[subject] || '📚' }).eq('id', existing.id);
     } else {
@@ -336,6 +336,135 @@ app.get('/api/quiz/results', async (req, res) => {
   const { data, error } = await supabase.from('quiz_results').select('*').eq('user_id', user.id).order('submitted_at', { ascending: false }).limit(20);
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
+});
+
+// ═══════════════════════════════════════════════
+//  APTITUDE ROUTES
+// ═══════════════════════════════════════════════
+
+app.post('/api/aptitude/generate', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { subject, difficulty } = req.body;
+  if (!subject || !difficulty) return res.status(400).json({ error: 'subject and difficulty are required' });
+
+  const subjectFullNames = {
+    Aptitude: 'Quantitative Aptitude (Number System, Arithmetic, Algebra, Geometry, Data Interpretation)',
+    Verbal: 'Verbal Ability (Vocabulary, Grammar, Reading Comprehension, Sentence Skills)',
+    Reasoning: 'Logical/Analytical Reasoning (Logical Reasoning, Analytical Reasoning, Non-Verbal, Data Sufficiency)'
+  };
+
+  const difficultyGuide = {
+    Easy: 'basic concepts, simple operations, beginner-level',
+    Medium: 'intermediate concepts, problem-solving, moderate complexity',
+    Hard: 'advanced concepts, complex tricky questions, time-consuming'
+  };
+
+  const subjectFull = subjectFullNames[subject] || subject;
+  const diffGuide = difficultyGuide[difficulty] || 'moderate complexity';
+
+  const prompt = `Generate exactly 10 multiple choice questions about ${subjectFull} at ${difficulty} difficulty level.
+
+Difficulty guide for ${difficulty}: ${diffGuide}
+
+STRICT RULES:
+- Each question must have exactly 4 options (A, B, C, D)
+- Only ONE correct answer per question
+- Questions must be unique and not repeated
+- For ${difficulty} level: ${diffGuide}
+- Make questions logically accurate and relevant to ${subjectFull}
+
+Respond ONLY with a valid JSON array. No explanation, no markdown, no code blocks. Just the raw JSON array like this:
+[
+  {
+    "question": "What is ...?",
+    "option_a": "Option 1",
+    "option_b": "Option 2",
+    "option_c": "Option 3",
+    "option_d": "Option 4",
+    "correct_option": "A"
+  }
+]
+
+Generate all 10 questions now:`;
+
+  try {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_APTITUDE_API_KEY || process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: process.env.GROQ_APTITUDE_MODEL || 'openai/gpt-oss-120b',
+        messages: [
+          { role: 'system', content: 'You are a technical quiz generator. You always respond with valid JSON arrays only.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 3000
+      })
+    });
+
+    if (!groqRes.ok) return res.status(500).json({ error: 'Groq API error: ' + groqRes.status });
+
+    const groqData = await groqRes.json();
+    let content = groqData.choices?.[0]?.message?.content || '';
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+
+    const startIdx = content.indexOf('[');
+    const endIdx = content.lastIndexOf(']');
+    if (startIdx === -1 || endIdx === -1) throw new Error('No valid JSON array found');
+    content = content.substring(startIdx, endIdx + 1);
+
+    const questions = JSON.parse(content);
+    if (!Array.isArray(questions) || questions.length === 0) throw new Error('Invalid questions format');
+
+    const validated = questions.slice(0, 10).map((q, i) => ({
+      id: `apt_${Date.now()}_${i}`,
+      question: q.question || `Question ${i + 1}`,
+      option_a: q.option_a || '', option_b: q.option_b || '', option_c: q.option_c || '', option_d: q.option_d || '',
+      correct_option: (q.correct_option || 'A').toUpperCase()
+    }));
+
+    res.json(validated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate questions: ' + err.message });
+  }
+});
+
+app.post('/api/aptitude/submit', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { subject, difficulty, answers, questions, score, total } = req.body;
+
+  const { data: result, error: saveErr } = await supabase
+    .from('quiz_results')
+    .insert({
+      user_id: user.id,
+      subject: difficulty ? `${subject} (${difficulty})` : subject,
+      score,
+      total,
+      answers,
+      submitted_at: new Date().toISOString()
+    }).select().single();
+
+  if (saveErr) return res.status(500).json({ error: saveErr.message });
+
+  const pct = Math.round((score / total) * 100);
+  if (pct < 60) {
+    const { data: existing } = await supabase.from('weak_topics').select('id').eq('user_id', user.id).eq('topic_name', subject).single();
+    const iconMap = { Aptitude: '🧮', Verbal: '📝', Reasoning: '🧠' };
+    if (existing) {
+      await supabase.from('weak_topics').update({ score_percentage: pct, icon: iconMap[subject] || '📚' }).eq('id', existing.id);
+    } else {
+      await supabase.from('weak_topics').insert({ user_id: user.id, topic_name: subject, score_percentage: pct, icon: iconMap[subject] || '📚' });
+    }
+  }
+
+  res.json({ success: true, score, total, percentage: pct, result });
 });
 
 // ═══════════════════════════════════════════════
@@ -404,7 +533,7 @@ Generate all 10 questions now:`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
         messages: [
           {
             role: 'system',
@@ -522,7 +651,7 @@ Respond ONLY with a valid JSON object. No markdown, no extra text:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
         messages: [
           {
             role: 'system',
