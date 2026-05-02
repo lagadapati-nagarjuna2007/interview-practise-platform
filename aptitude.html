@@ -1,349 +1,399 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>InterviewOS – Quiz</title>
-  <link rel="stylesheet" href="dashboard.css"/>
-  <link rel="stylesheet" href="quiz.css"/>
+  <link rel="stylesheet" href="dashboard.css" />
+  <link rel="stylesheet" href="quiz.css" />
 </head>
+
 <body>
 
-<div class="dashboard-layout">
+  <div class="dashboard-layout">
 
-  <!-- ═══ SIDEBAR ═══ -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand">
-      <div class="sidebar-brand-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
-      </div>
-      <div>
-        <div class="sidebar-brand-text">Interview<span>OS</span></div>
-        <div class="sidebar-brand-sub">AI Mock Interview Platform</div>
-      </div>
-    </div>
-    <nav class="sidebar-nav">
-      <a class="nav-item" href="dashboard.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        Dashboard
-      </a>
-      <a class="nav-item" href="#">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-        Coding Questions
-      </a>
-      <a class="nav-item" href="quiz.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-        Quiz
-      </a>
-      <a class="nav-item" href="interview.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        Interview
-      </a>
-      <a class="nav-item active" href="aptitude.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-        Aptitude & Reasoning
-      </a>
-      <a class="nav-item" href="#">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
-        Company Prep
-      </a>
-      <a class="nav-item" href="#">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        Progress
-      </a>
-      <a class="nav-item" href="#">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        Improve Me (AI Roadmap)
-      </a>
-      <a class="nav-item" href="#">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
-        Bookmarks
-      </a>
-      <a class="nav-item" href="#">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        Reports
-      </a>
-      <a class="nav-item" href="#">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-        Settings
-      </a>
-    </nav>
-    <div class="sidebar-user">
-      <div class="sidebar-avatar" id="sidebarAvatar">SN</div>
-      <div class="sidebar-user-info">
-        <div class="sidebar-user-name" id="sidebarName">Loading...</div>
-        <div class="sidebar-user-plan">Premium Plan 🔥</div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- ═══ MAIN ═══ -->
-  <main class="main-content">
-
-    <!-- ══ SCREEN 1: SUBJECT SELECTION ══ -->
-    <div id="screenSelect" class="screen active">
-      <div class="screen-header">
-        <h1>Aptitude, Verbal & Reasoning</h1>
-        <p>Prepare for your assessment with AI generated questions.</p>
-      </div>
-
-      <div class="quiz-subject-grid">
-        <div class="quiz-subject-card" data-subject="Aptitude">
-          <div class="qsc-icon" style="background:linear-gradient(135deg,#EF4444,#F87171)">🧮</div>
-          <div class="qsc-name">Aptitude</div>
-          <div class="qsc-full">Quantitative Aptitude</div>
-          <div class="qsc-meta">10 Questions · Per Level</div>
-          <button class="qsc-btn" onclick="selectSubject('Aptitude')">Start Test →</button>
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M8 12l3 3 5-5" />
+          </svg>
         </div>
-
-        <div class="quiz-subject-card" data-subject="Verbal">
-          <div class="qsc-icon" style="background:linear-gradient(135deg,#8B5CF6,#A78BFA)">📝</div>
-          <div class="qsc-name">Verbal</div>
-          <div class="qsc-full">Verbal Ability</div>
-          <div class="qsc-meta">10 Questions · Per Level</div>
-          <button class="qsc-btn" onclick="selectSubject('Verbal')">Start Test →</button>
-        </div>
-
-        <div class="quiz-subject-card" data-subject="Reasoning">
-          <div class="qsc-icon" style="background:linear-gradient(135deg,#F59E0B,#FCD34D)">🧠</div>
-          <div class="qsc-name">Reasoning</div>
-          <div class="qsc-full">Logical Reasoning</div>
-          <div class="qsc-meta">10 Questions · Per Level</div>
-          <button class="qsc-btn" onclick="selectSubject('Reasoning')">Start Test →</button>
+        <div>
+          <div class="sidebar-brand-text">Interview<span>OS</span></div>
+          <div class="sidebar-brand-sub">AI Mock Interview Platform</div>
         </div>
       </div>
-
-      <!-- Past Results -->
-      <div class="panel" style="margin-top:24px">
-        <div class="panel-header">
-          <h3 class="panel-title">📊 Your Recent Quiz Results</h3>
-        </div>
-        <div id="pastResults">
-          <div class="quiz-empty-msg">No quiz attempts yet. Start your first quiz above!</div>
+      <nav class="sidebar-nav">
+        <a class="nav-item" href="dashboard.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
+          Dashboard
+        </a>
+        <a class="nav-item" href="coding.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
+          </svg>
+          Coding Questions
+        </a>
+        <a class="nav-item" href="quiz.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4" />
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+          </svg>
+          Quiz
+        </a>
+        <a class="nav-item" href="interview.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+          </svg>
+          Interview
+        </a>
+        <a class="nav-item active" href="aptitude.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" />
+            <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
+          </svg>
+          Aptitude & Reasoning
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" />
+            <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" />
+          </svg>
+          Company Prep
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
+          Progress
+        </a>
+        <a class="nav-item" href="improve.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+          </svg>
+          Improve Me (AI Roadmap)
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+          </svg>
+          Bookmarks
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+          Reports
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+          </svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebarAvatar">SN</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebarName">Loading...</div>
+          <div class="sidebar-user-plan">Premium Plan 🔥</div>
         </div>
       </div>
-    </div>
+    </aside>
 
-    <!-- ══ SCREEN 2: DIFFICULTY SELECTION ══ -->
-    <div id="screenDifficulty" style="display:none">
-      <header class="header">
-        <div class="header-greeting">
-          <h1 id="diffSubjectTitle">DSA Quiz 🎯</h1>
-          <p>Choose your difficulty level — AI will generate 10 unique questions</p>
+    <!-- ═══ MAIN ═══ -->
+    <main class="main-content">
+
+      <!-- ══ SCREEN 1: SUBJECT SELECTION ══ -->
+      <div id="screenSelect" class="screen active">
+        <div class="screen-header">
+          <h1>Aptitude, Verbal & Reasoning</h1>
+          <p>Prepare for your assessment with AI generated questions.</p>
         </div>
-        <div class="header-actions">
-          <button class="quiz-back-btn" onclick="goBackToSubjects()">← Back</button>
-        </div>
-      </header>
 
-      <div class="difficulty-grid">
-
-        <!-- Easy -->
-        <div class="difficulty-card easy" onclick="startQuiz('Easy')">
-          <div class="diff-glow"></div>
-          <div class="diff-icon">🌱</div>
-          <div class="diff-level-badge easy-badge">EASY</div>
-          <h2 class="diff-title">Beginner</h2>
-          <p class="diff-desc">Fundamental concepts, definitions, and basic operations. Perfect for warming up or testing your basics.</p>
-          <div class="diff-stats">
-            <div class="diff-stat">
-              <span class="diff-stat-val">10</span>
-              <span class="diff-stat-label">Questions</span>
-            </div>
-            <div class="diff-stat-divider"></div>
-            <div class="diff-stat">
-              <span class="diff-stat-val">2 min</span>
-              <span class="diff-stat-label">Per Question</span>
-            </div>
-            <div class="diff-stat-divider"></div>
-            <div class="diff-stat">
-              <span class="diff-stat-val">20 min</span>
-              <span class="diff-stat-label">Total Time</span>
-            </div>
+        <div class="quiz-subject-grid">
+          <div class="quiz-subject-card" data-subject="Aptitude">
+            <div class="qsc-icon" style="background:linear-gradient(135deg,#EF4444,#F87171)">🧮</div>
+            <div class="qsc-name">Aptitude</div>
+            <div class="qsc-full">Quantitative Aptitude</div>
+            <div class="qsc-meta">10 Questions · Per Level</div>
+            <button class="qsc-btn" onclick="selectSubject('Aptitude')">Start Test →</button>
           </div>
-          <button class="diff-btn easy-btn">Start Easy Quiz →</button>
-        </div>
 
-        <!-- Medium -->
-        <div class="difficulty-card medium" onclick="startQuiz('Medium')">
-          <div class="diff-glow medium-glow"></div>
-          <div class="diff-icon">⚡</div>
-          <div class="diff-level-badge medium-badge">MEDIUM</div>
-          <h2 class="diff-title">Intermediate</h2>
-          <p class="diff-desc">Application of concepts, problem-solving, moderate complexity. Ideal for interview preparation.</p>
-          <div class="diff-stats">
-            <div class="diff-stat">
-              <span class="diff-stat-val">10</span>
-              <span class="diff-stat-label">Questions</span>
-            </div>
-            <div class="diff-stat-divider"></div>
-            <div class="diff-stat">
-              <span class="diff-stat-val">2 min</span>
-              <span class="diff-stat-label">Per Question</span>
-            </div>
-            <div class="diff-stat-divider"></div>
-            <div class="diff-stat">
-              <span class="diff-stat-val">20 min</span>
-              <span class="diff-stat-label">Total Time</span>
-            </div>
+          <div class="quiz-subject-card" data-subject="Verbal">
+            <div class="qsc-icon" style="background:linear-gradient(135deg,#8B5CF6,#A78BFA)">📝</div>
+            <div class="qsc-name">Verbal</div>
+            <div class="qsc-full">Verbal Ability</div>
+            <div class="qsc-meta">10 Questions · Per Level</div>
+            <button class="qsc-btn" onclick="selectSubject('Verbal')">Start Test →</button>
           </div>
-          <button class="diff-btn medium-btn">Start Medium Quiz →</button>
-        </div>
 
-        <!-- Hard -->
-        <div class="difficulty-card hard" onclick="startQuiz('Hard')">
-          <div class="diff-glow hard-glow"></div>
-          <div class="diff-icon">🔥</div>
-          <div class="diff-level-badge hard-badge">HARD</div>
-          <h2 class="diff-title">Advanced</h2>
-          <p class="diff-desc">Complex algorithms, edge cases, expert-level tricky questions. For the truly prepared.</p>
-          <div class="diff-stats">
-            <div class="diff-stat">
-              <span class="diff-stat-val">10</span>
-              <span class="diff-stat-label">Questions</span>
-            </div>
-            <div class="diff-stat-divider"></div>
-            <div class="diff-stat">
-              <span class="diff-stat-val">2 min</span>
-              <span class="diff-stat-label">Per Question</span>
-            </div>
-            <div class="diff-stat-divider"></div>
-            <div class="diff-stat">
-              <span class="diff-stat-val">20 min</span>
-              <span class="diff-stat-label">Total Time</span>
-            </div>
+          <div class="quiz-subject-card" data-subject="Reasoning">
+            <div class="qsc-icon" style="background:linear-gradient(135deg,#F59E0B,#FCD34D)">🧠</div>
+            <div class="qsc-name">Reasoning</div>
+            <div class="qsc-full">Logical Reasoning</div>
+            <div class="qsc-meta">10 Questions · Per Level</div>
+            <button class="qsc-btn" onclick="selectSubject('Reasoning')">Start Test →</button>
           </div>
-          <button class="diff-btn hard-btn">Start Hard Quiz →</button>
         </div>
 
-      </div>
-
-      <!-- AI Info Banner -->
-      <div class="ai-info-banner">
-        <div class="ai-info-icon">🤖</div>
-        <div class="ai-info-text">
-          <strong>AI-Powered Questions</strong>
-          <span>Questions are uniquely generated by Groq AI (Llama 3.3 70B) for every quiz attempt — no two quizzes are the same!</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ SCREEN 3: QUIZ IN PROGRESS ══ -->
-    <div id="screenQuiz" style="display:none">
-      <div class="quiz-topbar">
-        <div class="quiz-topbar-left">
-          <button class="quiz-quit-btn" onclick="confirmQuit()">✕ Quit</button>
-          <div class="quiz-subject-badge" id="quizSubjectBadge">DSA</div>
-          <div class="quiz-diff-badge" id="quizDiffBadge">Easy</div>
-        </div>
-        <div class="quiz-topbar-center">
-          <span id="qProgress">Question 1 of 10</span>
-        </div>
-        <div class="quiz-topbar-right">
-          <div class="quiz-timer" id="quizTimer">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            <span id="timerDisplay">120</span>s
+        <!-- Past Results -->
+        <div class="panel" style="margin-top:24px">
+          <div class="panel-header">
+            <h3 class="panel-title">📊 Your Recent Quiz Results</h3>
+          </div>
+          <div id="pastResults">
+            <div class="quiz-empty-msg">No quiz attempts yet. Start your first quiz above!</div>
           </div>
         </div>
       </div>
 
-      <div class="quiz-progress-track">
-        <div class="quiz-progress-fill" id="quizProgressFill" style="width:10%"></div>
-      </div>
+      <!-- ══ SCREEN 2: DIFFICULTY SELECTION ══ -->
+      <div id="screenDifficulty" style="display:none">
+        <header class="header">
+          <div class="header-greeting">
+            <h1 id="diffSubjectTitle">DSA Quiz 🎯</h1>
+            <p>Choose your difficulty level — AI will generate 10 unique questions</p>
+          </div>
+          <div class="header-actions">
+            <button class="quiz-back-btn" onclick="goBackToSubjects()">← Back</button>
+          </div>
+        </header>
 
-      <div class="quiz-dots-row" id="quizDotsRow"></div>
+        <div class="difficulty-grid">
 
-      <div class="quiz-question-box">
-        <div class="quiz-q-number" id="qNumber">Q1</div>
-        <div class="quiz-q-text" id="qText">Loading question...</div>
-        <div class="quiz-options" id="qOptions"></div>
-      </div>
-
-      <div class="quiz-nav-row">
-        <button class="quiz-nav-btn" id="btnPrev" onclick="prevQuestion()" disabled>← Previous</button>
-        <button class="quiz-skip-btn" onclick="skipQuestion()">Skip</button>
-        <button class="quiz-nav-btn primary" id="btnNext" onclick="nextQuestion()">Next →</button>
-      </div>
-    </div>
-
-    <!-- ══ SCREEN 4: RESULT ══ -->
-    <div id="screenResult" style="display:none">
-      <div class="quiz-result-wrap">
-        <div class="quiz-result-card">
-          <div class="quiz-result-emoji" id="resultEmoji">🎉</div>
-          <h2 class="quiz-result-title" id="resultTitle">Quiz Complete!</h2>
-          <div class="quiz-result-subject" id="resultSubject">DSA — Easy</div>
-
-          <div class="quiz-score-circle">
-            <svg viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" stroke-width="10"/>
-              <circle cx="60" cy="60" r="52" fill="none" stroke="#6C4FE8" stroke-width="10"
-                stroke-dasharray="326.7" stroke-dashoffset="326.7"
-                stroke-linecap="round" transform="rotate(-90 60 60)"
-                id="scoreCircle"/>
-            </svg>
-            <div class="quiz-score-center">
-              <div class="quiz-score-val" id="scoreVal">0</div>
-              <div class="quiz-score-label">/ 10</div>
+          <!-- Easy -->
+          <div class="difficulty-card easy" onclick="startQuiz('Easy')">
+            <div class="diff-glow"></div>
+            <div class="diff-icon">🌱</div>
+            <div class="diff-level-badge easy-badge">EASY</div>
+            <h2 class="diff-title">Beginner</h2>
+            <p class="diff-desc">Fundamental concepts, definitions, and basic operations. Perfect for warming up or
+              testing your basics.</p>
+            <div class="diff-stats">
+              <div class="diff-stat">
+                <span class="diff-stat-val">10</span>
+                <span class="diff-stat-label">Questions</span>
+              </div>
+              <div class="diff-stat-divider"></div>
+              <div class="diff-stat">
+                <span class="diff-stat-val">2 min</span>
+                <span class="diff-stat-label">Per Question</span>
+              </div>
+              <div class="diff-stat-divider"></div>
+              <div class="diff-stat">
+                <span class="diff-stat-val">20 min</span>
+                <span class="diff-stat-label">Total Time</span>
+              </div>
             </div>
+            <button class="diff-btn easy-btn">Start Easy Quiz →</button>
           </div>
 
-          <div class="quiz-result-stats">
-            <div class="qrs-item correct">
-              <div class="qrs-val" id="resCorrect">0</div>
-              <div class="qrs-label">✅ Correct</div>
+          <!-- Medium -->
+          <div class="difficulty-card medium" onclick="startQuiz('Medium')">
+            <div class="diff-glow medium-glow"></div>
+            <div class="diff-icon">⚡</div>
+            <div class="diff-level-badge medium-badge">MEDIUM</div>
+            <h2 class="diff-title">Intermediate</h2>
+            <p class="diff-desc">Application of concepts, problem-solving, moderate complexity. Ideal for interview
+              preparation.</p>
+            <div class="diff-stats">
+              <div class="diff-stat">
+                <span class="diff-stat-val">10</span>
+                <span class="diff-stat-label">Questions</span>
+              </div>
+              <div class="diff-stat-divider"></div>
+              <div class="diff-stat">
+                <span class="diff-stat-val">2 min</span>
+                <span class="diff-stat-label">Per Question</span>
+              </div>
+              <div class="diff-stat-divider"></div>
+              <div class="diff-stat">
+                <span class="diff-stat-val">20 min</span>
+                <span class="diff-stat-label">Total Time</span>
+              </div>
             </div>
-            <div class="qrs-item wrong">
-              <div class="qrs-val" id="resWrong">0</div>
-              <div class="qrs-label">❌ Wrong</div>
-            </div>
-            <div class="qrs-item skip">
-              <div class="qrs-val" id="resSkipped">0</div>
-              <div class="qrs-label">⏭️ Skipped</div>
-            </div>
-            <div class="qrs-item percent">
-              <div class="qrs-val" id="resPercent">0%</div>
-              <div class="qrs-label">📊 Score %</div>
-            </div>
+            <button class="diff-btn medium-btn">Start Medium Quiz →</button>
           </div>
 
-          <div class="quiz-result-grade" id="resultGrade">Good Job!</div>
-
-          <div class="quiz-result-actions">
-            <button class="quiz-action-btn secondary" onclick="reviewAnswers()">📝 Review Answers</button>
-            <button class="quiz-action-btn primary" onclick="retakeQuiz()">🔄 Retake Quiz</button>
-            <button class="quiz-action-btn outline" onclick="goHome()">🏠 Dashboard</button>
+          <!-- Hard -->
+          <div class="difficulty-card hard" onclick="startQuiz('Hard')">
+            <div class="diff-glow hard-glow"></div>
+            <div class="diff-icon">🔥</div>
+            <div class="diff-level-badge hard-badge">HARD</div>
+            <h2 class="diff-title">Advanced</h2>
+            <p class="diff-desc">Complex algorithms, edge cases, expert-level tricky questions. For the truly prepared.
+            </p>
+            <div class="diff-stats">
+              <div class="diff-stat">
+                <span class="diff-stat-val">10</span>
+                <span class="diff-stat-label">Questions</span>
+              </div>
+              <div class="diff-stat-divider"></div>
+              <div class="diff-stat">
+                <span class="diff-stat-val">2 min</span>
+                <span class="diff-stat-label">Per Question</span>
+              </div>
+              <div class="diff-stat-divider"></div>
+              <div class="diff-stat">
+                <span class="diff-stat-val">20 min</span>
+                <span class="diff-stat-label">Total Time</span>
+              </div>
+            </div>
+            <button class="diff-btn hard-btn">Start Hard Quiz →</button>
           </div>
-          <button class="quiz-action-btn outline" style="margin-top:10px;width:100%" onclick="goBackToSubjects()">🎯 Try Another Subject</button>
+
         </div>
 
-        <div id="reviewSection" style="display:none; margin-top:24px; width:100%">
-          <div class="panel">
-            <div class="panel-header"><h3 class="panel-title">📝 Answer Review</h3></div>
-            <div id="reviewList"></div>
+        <!-- AI Info Banner -->
+        <div class="ai-info-banner">
+          <div class="ai-info-icon">🤖</div>
+          <div class="ai-info-text">
+            <strong>AI-Powered Questions</strong>
+            <span>Questions are uniquely generated by Groq AI (Llama 3.3 70B) for every quiz attempt — no two quizzes
+              are the same!</span>
           </div>
         </div>
       </div>
-    </div>
 
-  </main>
-</div>
+      <!-- ══ SCREEN 3: QUIZ IN PROGRESS ══ -->
+      <div id="screenQuiz" style="display:none">
+        <div class="quiz-topbar">
+          <div class="quiz-topbar-left">
+            <button class="quiz-quit-btn" onclick="confirmQuit()">✕ Quit</button>
+            <div class="quiz-subject-badge" id="quizSubjectBadge">DSA</div>
+            <div class="quiz-diff-badge" id="quizDiffBadge">Easy</div>
+          </div>
+          <div class="quiz-topbar-center">
+            <span id="qProgress">Question 1 of 10</span>
+          </div>
+          <div class="quiz-topbar-right">
+            <div class="quiz-timer" id="quizTimer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+              <span id="timerDisplay">120</span>s
+            </div>
+          </div>
+        </div>
 
-<!-- QUIT CONFIRM MODAL -->
-<div class="modal-overlay" id="quitModal" style="display:none">
-  <div class="modal">
-    <h3>⚠️ Quit Quiz?</h3>
-    <p style="color:var(--text-secondary);margin:8px 0 20px">Your progress will be lost. Are you sure?</p>
-    <div class="modal-actions">
-      <button class="modal-cancel" onclick="closeQuit()">Continue Quiz</button>
-      <button class="modal-submit" style="background:#EF4444" onclick="quitQuiz()">Yes, Quit</button>
+        <div class="quiz-progress-track">
+          <div class="quiz-progress-fill" id="quizProgressFill" style="width:10%"></div>
+        </div>
+
+        <div class="quiz-dots-row" id="quizDotsRow"></div>
+
+        <div class="quiz-question-box">
+          <div class="quiz-q-number" id="qNumber">Q1</div>
+          <div class="quiz-q-text" id="qText">Loading question...</div>
+          <div class="quiz-options" id="qOptions"></div>
+        </div>
+
+        <div class="quiz-nav-row">
+          <button class="quiz-nav-btn" id="btnPrev" onclick="prevQuestion()" disabled>← Previous</button>
+          <button class="quiz-skip-btn" onclick="skipQuestion()">Skip</button>
+          <button class="quiz-nav-btn primary" id="btnNext" onclick="nextQuestion()">Next →</button>
+        </div>
+      </div>
+
+      <!-- ══ SCREEN 4: RESULT ══ -->
+      <div id="screenResult" style="display:none">
+        <div class="quiz-result-wrap">
+          <div class="quiz-result-card">
+            <div class="quiz-result-emoji" id="resultEmoji">🎉</div>
+            <h2 class="quiz-result-title" id="resultTitle">Quiz Complete!</h2>
+            <div class="quiz-result-subject" id="resultSubject">DSA — Easy</div>
+
+            <div class="quiz-score-circle">
+              <svg viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" stroke-width="10" />
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#6C4FE8" stroke-width="10" stroke-dasharray="326.7"
+                  stroke-dashoffset="326.7" stroke-linecap="round" transform="rotate(-90 60 60)" id="scoreCircle" />
+              </svg>
+              <div class="quiz-score-center">
+                <div class="quiz-score-val" id="scoreVal">0</div>
+                <div class="quiz-score-label">/ 10</div>
+              </div>
+            </div>
+
+            <div class="quiz-result-stats">
+              <div class="qrs-item correct">
+                <div class="qrs-val" id="resCorrect">0</div>
+                <div class="qrs-label">✅ Correct</div>
+              </div>
+              <div class="qrs-item wrong">
+                <div class="qrs-val" id="resWrong">0</div>
+                <div class="qrs-label">❌ Wrong</div>
+              </div>
+              <div class="qrs-item skip">
+                <div class="qrs-val" id="resSkipped">0</div>
+                <div class="qrs-label">⏭️ Skipped</div>
+              </div>
+              <div class="qrs-item percent">
+                <div class="qrs-val" id="resPercent">0%</div>
+                <div class="qrs-label">📊 Score %</div>
+              </div>
+            </div>
+
+            <div class="quiz-result-grade" id="resultGrade">Good Job!</div>
+
+            <div class="quiz-result-actions">
+              <button class="quiz-action-btn secondary" onclick="reviewAnswers()">📝 Review Answers</button>
+              <button class="quiz-action-btn primary" onclick="retakeQuiz()">🔄 Retake Quiz</button>
+              <button class="quiz-action-btn outline" onclick="goHome()">🏠 Dashboard</button>
+            </div>
+            <button class="quiz-action-btn outline" style="margin-top:10px;width:100%" onclick="goBackToSubjects()">🎯
+              Try Another Subject</button>
+          </div>
+
+          <div id="reviewSection" style="display:none; margin-top:24px; width:100%">
+            <div class="panel">
+              <div class="panel-header">
+                <h3 class="panel-title">📝 Answer Review</h3>
+              </div>
+              <div id="reviewList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- QUIT CONFIRM MODAL -->
+  <div class="modal-overlay" id="quitModal" style="display:none">
+    <div class="modal">
+      <h3>⚠️ Quit Quiz?</h3>
+      <p style="color:var(--text-secondary);margin:8px 0 20px">Your progress will be lost. Are you sure?</p>
+      <div class="modal-actions">
+        <button class="modal-cancel" onclick="closeQuit()">Continue Quiz</button>
+        <button class="modal-submit" style="background:#EF4444" onclick="quitQuiz()">Yes, Quit</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
 
-<script src="aptitude.js"></script>
+  <script src="aptitude.js"></script>
 </body>
+
 </html>

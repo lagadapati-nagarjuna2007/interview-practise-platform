@@ -374,6 +374,26 @@ function simulateExecution(isSubmit) {
         const statuses = JSON.parse(localStorage.getItem('codingStatuses') || '{}');
         statuses[activeQuestionId] = 'solved';
         localStorage.setItem('codingStatuses', JSON.stringify(statuses));
+
+        // Save to Database via unified assessments endpoint
+        const token = localStorage.getItem('token');
+        if (token) {
+          fetch('/api/assessments/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+              module: 'coding',
+              subject: currentQuestion ? currentQuestion.title : 'Coding Problem',
+              score: 100, // 100% score for accepted solution
+              total: 100,
+              details: { language: document.getElementById('languageSelect').value, code: currentCode }
+            })
+          }).then(res => res.json()).then(data => {
+            if(data.ai_suggestion) {
+              setTimeout(() => showToast("AI Feedback: " + data.ai_suggestion), 3500);
+            }
+          }).catch(e => console.error("Error saving assessment:", e));
+        }
       } else {
         showToast("Code executed successfully.");
       }

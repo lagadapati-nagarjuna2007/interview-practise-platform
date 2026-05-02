@@ -89,7 +89,7 @@ document.getElementById('btn-start').addEventListener('click', async () => {
 
     // Init state
     currentQ = 0;
-    answers = [];
+    answers = new Array(questions.length).fill(null);
     startInterview();
 
   } catch (err) {
@@ -137,10 +137,21 @@ function loadQuestion(index) {
   // Q text
   document.getElementById('q-text').textContent = q.question;
 
-  // Clear answer
+  // Clear or restore answer
   const textarea = document.getElementById('answer-input');
-  textarea.value = '';
-  document.getElementById('word-count').textContent = '0 words';
+  const existingAns = answers[index];
+  if (existingAns && !existingAns.skipped) {
+    textarea.value = existingAns.userAnswer || '';
+  } else {
+    textarea.value = '';
+  }
+  
+  // Word count logic for loaded answer
+  const words = textarea.value.trim() === '' ? 0 : textarea.value.trim().split(/\s+/).length;
+  document.getElementById('word-count').textContent = `${words} word${words !== 1 ? 's' : ''}`;
+  
+  document.getElementById('btn-prev').disabled = (index === 0);
+  
   textarea.focus();
 
   // Start timer
@@ -189,6 +200,24 @@ function autoSubmitAnswer() {
   nextQuestion();
 }
 
+// ─── Quit Button ───
+document.getElementById('btn-quit').addEventListener('click', () => {
+  if (confirm('Are you sure you want to quit the interview? Your progress will be lost.')) {
+    clearInterval(timerInterval);
+    showScreen('screen-select');
+  }
+});
+
+// ─── Previous Button ───
+document.getElementById('btn-prev').addEventListener('click', () => {
+  clearInterval(timerInterval);
+  saveAnswer(false);
+  if (currentQ > 0) {
+    currentQ--;
+    loadQuestion(currentQ);
+  }
+});
+
 // ─── Submit Answer Button ───
 document.getElementById('btn-submit-ans').addEventListener('click', () => {
   clearInterval(timerInterval);
@@ -199,27 +228,27 @@ document.getElementById('btn-submit-ans').addEventListener('click', () => {
 // ─── Skip Button ───
 document.getElementById('btn-skip').addEventListener('click', () => {
   clearInterval(timerInterval);
-  answers.push({
+  answers[currentQ] = {
     question: questions[currentQ].question,
     userAnswer: '',
     skipped: true,
     category: questions[currentQ].category || selectedSubject,
     difficulty: questions[currentQ].difficulty || selectedDifficulty
-  });
+  };
   nextQuestion();
 });
 
 // ─── Save Answer ───
 function saveAnswer(timedOut) {
   const ans = document.getElementById('answer-input').value.trim();
-  answers.push({
+  answers[currentQ] = {
     question: questions[currentQ].question,
     userAnswer: ans,
     skipped: false,
     timedOut,
     category: questions[currentQ].category || selectedSubject,
     difficulty: questions[currentQ].difficulty || selectedDifficulty
-  });
+  };
 }
 
 // ─── Next Question or Evaluate ───

@@ -1,7 +1,7 @@
 ■ Interview Preparation Syllabus
  Aptitude | Verbal Ability | Reasoning
  
- APTITUDE
+ # APTITUDE
  
 Number System
  LCM & HCF
@@ -39,7 +39,9 @@ Miscellaneous
  Calendar & Clocks
  Average
  Simplification & Approximation
- VERBAL ABILITY
+
+
+#  VERBAL ABILITY
  
 Vocabulary
  Synonyms & Antonyms
@@ -79,7 +81,9 @@ Writing Skills
  Spot the Error in Paragraph
  REASONING
  
-Logical Reasoning
+# Logical Reasoning
+
+
  Syllogisms
  Blood Relations
  Direction & Distance

@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
@@ -120,6 +121,15 @@ app.get('/api/dashboard/weak-topics', async (req, res) => {
   res.json(data);
 });
 
+app.delete('/api/dashboard/weak-topics/:id', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const { id } = req.params;
+  const { error } = await supabase.from('weak_topics').delete().eq('id', id).eq('user_id', user.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ success: true });
+});
+
 app.get('/api/dashboard/goals', async (req, res) => {
   const user = await getUser(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
@@ -216,7 +226,7 @@ Generate all 10 questions now:`;
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
-        max_tokens: 3000
+        max_tokens: 1200
       })
     });
 
@@ -316,9 +326,69 @@ app.post('/api/quiz/submit', async (req, res) => {
   }
 
   const pct = Math.round((score / total) * 100);
-  if (pct < 60) {
-    const { data: existing } = await supabase.from('weak_topics').select('id').eq('user_id', user.id).eq('topic_name', subject).single();
+  
+  // Save to unified assessment_evaluations table for AI suggestions and extract weak topics
+  let ai_suggestion = `You scored ${score}/${total} in ${subject} quiz. Keep practicing!`;
+  let ai_weak_topics = [];
+  
+  try {
+    let wrongQuestionsText = '';
+    if (questions && Array.isArray(questions) && Array.isArray(answers)) {
+      questions.forEach((q, i) => {
+        if (answers[i] !== q.correct_option) {
+          wrongQuestionsText += `- ${q.question}\n`;
+        }
+      });
+    }
+
+    const prompt = `A user scored ${score} out of ${total} (${pct}%) on a technical quiz about ${subject}.
+The questions they answered incorrectly (if any) are:
+${wrongQuestionsText}
+
+Based on these incorrect questions, identify up to 3 specific sub-topics they need to improve on. If they scored 100%, leave it empty.
+Also provide a 1-sentence encouraging AI feedback.
+Respond ONLY with a valid JSON object. No markdown, no extra text:
+{
+  "feedback": "encuraging feedback sentence",
+  "weak_topics": ["sub-topic 1", "sub-topic 2"]
+}`;
+
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 200 })
+    });
+    
+    if (groqRes.ok) {
+      const groqData = await groqRes.json();
+      let content = groqData.choices?.[0]?.message?.content || '';
+      content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+      const startIdx = content.indexOf('{');
+      const endIdx = content.lastIndexOf('}');
+      if (startIdx !== -1 && endIdx !== -1) {
+        const parsed = JSON.parse(content.substring(startIdx, endIdx + 1));
+        ai_suggestion = parsed.feedback || ai_suggestion;
+        ai_weak_topics = parsed.weak_topics || [];
+      }
+    }
+  } catch (err) { console.error('AI suggestion/weak topics error:', err.message); }
+
+  // Insert AI generated weak topics into DB
+  if (ai_weak_topics.length > 0) {
     const iconMap = { DSA: '🌳', DBMS: '🗄️', OS: '🖥️', CN: '🌐', C: '⚙️', CPP: '🔷', Java: '☕', Python: '🐍', Aptitude: '🧮', Verbal: '📝', Reasoning: '🧠' };
+    const icon = iconMap[subject] || '📚';
+    for (const topic of ai_weak_topics) {
+      const { data: existing } = await supabase.from('weak_topics').select('id').eq('user_id', user.id).eq('topic_name', topic).single();
+      if (existing) {
+        await supabase.from('weak_topics').update({ score_percentage: pct, icon }).eq('id', existing.id);
+      } else {
+        await supabase.from('weak_topics').insert({ user_id: user.id, topic_name: topic, score_percentage: pct, icon });
+      }
+    }
+  } else if (pct < 60) {
+    // Fallback if AI fails to generate specific topics
+    const iconMap = { DSA: '🌳', DBMS: '🗄️', OS: '🖥️', CN: '🌐', C: '⚙️', CPP: '🔷', Java: '☕', Python: '🐍', Aptitude: '🧮', Verbal: '📝', Reasoning: '🧠' };
+    const { data: existing } = await supabase.from('weak_topics').select('id').eq('user_id', user.id).eq('topic_name', subject).single();
     if (existing) {
       await supabase.from('weak_topics').update({ score_percentage: pct, icon: iconMap[subject] || '📚' }).eq('id', existing.id);
     } else {
@@ -326,7 +396,17 @@ app.post('/api/quiz/submit', async (req, res) => {
     }
   }
 
-  res.json({ success: true, score, total, percentage: pct, result });
+  await supabase.from('assessment_evaluations').insert({
+    user_id: user.id,
+    module: 'quiz',
+    subject: subject,
+    score,
+    total,
+    ai_suggestion,
+    details: { answers, difficulty }
+  });
+
+  res.json({ success: true, score, total, percentage: pct, result, ai_suggestion });
 });
 
 // GET /api/quiz/results
@@ -364,10 +444,40 @@ app.post('/api/aptitude/generate', async (req, res) => {
   const subjectFull = subjectFullNames[subject] || subject;
   const diffGuide = difficultyGuide[difficulty] || 'moderate complexity';
 
+  let syllabusContext = '';
+  try {
+    const syllabusContent = fs.readFileSync(path.join(__dirname, 'syllabus.txt'), 'utf-8');
+    
+    // Extract only the relevant section to save tokens and prevent 429 errors
+    let targetSection = subject.toUpperCase();
+    if (targetSection === 'VERBAL') targetSection = 'VERBAL ABILITY';
+    
+    const lines = syllabusContent.split('\n');
+    let isCapturing = false;
+    let sectionLines = [];
+    
+    for (const line of lines) {
+      const trimLine = line.trim();
+      if (trimLine === 'APTITUDE' || trimLine === 'VERBAL ABILITY' || trimLine === 'REASONING') {
+        if (trimLine === targetSection) isCapturing = true;
+        else if (isCapturing) break;
+      } else if (isCapturing && !trimLine.startsWith('Tip:')) {
+        sectionLines.push(line);
+      }
+    }
+    
+    const relevantSyllabus = sectionLines.join('\n').trim();
+    if (relevantSyllabus) {
+      syllabusContext = `\nPlease ensure the questions generated strictly adhere to the following syllabus for ${subjectFull}:\n${relevantSyllabus}\n`;
+    }
+  } catch (err) {
+    console.error('Could not read syllabus.txt:', err.message);
+  }
+
   const prompt = `Generate exactly 10 multiple choice questions about ${subjectFull} at ${difficulty} difficulty level.
 
 Difficulty guide for ${difficulty}: ${diffGuide}
-
+${syllabusContext}
 STRICT RULES:
 - Each question must have exactly 4 options (A, B, C, D)
 - Only ONE correct answer per question
@@ -390,26 +500,48 @@ Respond ONLY with a valid JSON array. No explanation, no markdown, no code block
 Generate all 10 questions now:`;
 
   try {
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.GROQ_APTITUDE_API_KEY || process.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: process.env.GROQ_APTITUDE_MODEL || 'openai/gpt-oss-120b',
-        messages: [
-          { role: 'system', content: 'You are a technical quiz generator. You always respond with valid JSON arrays only.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 3000
-      })
-    });
+    let apiModel = process.env.GROQ_APTITUDE_MODEL || 'llama-3.3-70b-versatile';
+    // If the model is an openrouter model but we are calling Groq, fallback to a valid groq model
+    if (apiModel.includes('openai/') || apiModel.includes('gpt-oss')) {
+      apiModel = 'llama-3.3-70b-versatile';
+    }
 
-    if (!groqRes.ok) return res.status(500).json({ error: 'Groq API error: ' + groqRes.status });
+    const fetchQuestions = async (retries = 1) => {
+      for (let i = 0; i <= retries; i++) {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.GROQ_APTITUDE_API_KEY || process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: apiModel,
+            messages: [
+              { role: 'system', content: 'You are a technical quiz generator. You always respond with valid JSON arrays only.' },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 1200 // Reduced max_tokens to prevent 429 Rate Limit issues
+          })
+        });
 
-    const groqData = await groqRes.json();
+        if (!groqRes.ok) {
+          if (groqRes.status === 429 && i < retries) {
+            console.log('Hit 429 Rate Limit, retrying...');
+            await new Promise(res => setTimeout(res, 2000)); // wait 2s before retry
+            continue;
+          }
+          const errText = await groqRes.text();
+          throw new Error(`Groq API error ${groqRes.status}: ${errText}`);
+        }
+
+        const groqData = await groqRes.json();
+        return groqData;
+      }
+    };
+
+    const groqData = await fetchQuestions(1);
+
     let content = groqData.choices?.[0]?.message?.content || '';
     content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
 
@@ -430,6 +562,10 @@ Generate all 10 questions now:`;
 
     res.json(validated);
   } catch (err) {
+    console.error('Aptitude generate error:', err.message);
+    if (err.message.includes('429')) {
+       return res.status(429).json({ error: 'AI Rate Limit Exceeded (429). Please wait a moment and try again.' });
+    }
     res.status(500).json({ error: 'Failed to generate questions: ' + err.message });
   }
 });
@@ -454,9 +590,68 @@ app.post('/api/aptitude/submit', async (req, res) => {
   if (saveErr) return res.status(500).json({ error: saveErr.message });
 
   const pct = Math.round((score / total) * 100);
-  if (pct < 60) {
-    const { data: existing } = await supabase.from('weak_topics').select('id').eq('user_id', user.id).eq('topic_name', subject).single();
+  // Save to unified assessment_evaluations table for AI suggestions and extract weak topics
+  let ai_suggestion = `You scored ${score}/${total} in ${subject} aptitude test. Keep practicing!`;
+  let ai_weak_topics = [];
+  
+  try {
+    let wrongQuestionsText = '';
+    if (questions && Array.isArray(questions) && Array.isArray(answers)) {
+      questions.forEach((q, i) => {
+        if (answers[i] !== q.correct_option) {
+          wrongQuestionsText += `- ${q.question}\n`;
+        }
+      });
+    }
+
+    const prompt = `A user scored ${score} out of ${total} (${pct}%) on a ${subject} assessment.
+The questions they answered incorrectly (if any) are:
+${wrongQuestionsText}
+
+Based on these incorrect questions, identify up to 3 specific sub-topics they need to improve on. If they scored 100%, leave it empty.
+Also provide a 1-sentence encouraging AI feedback.
+Respond ONLY with a valid JSON object. No markdown, no extra text:
+{
+  "feedback": "encuraging feedback sentence",
+  "weak_topics": ["sub-topic 1", "sub-topic 2"]
+}`;
+
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], max_tokens: 200 })
+    });
+    
+    if (groqRes.ok) {
+      const groqData = await groqRes.json();
+      let content = groqData.choices?.[0]?.message?.content || '';
+      content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+      const startIdx = content.indexOf('{');
+      const endIdx = content.lastIndexOf('}');
+      if (startIdx !== -1 && endIdx !== -1) {
+        const parsed = JSON.parse(content.substring(startIdx, endIdx + 1));
+        ai_suggestion = parsed.feedback || ai_suggestion;
+        ai_weak_topics = parsed.weak_topics || [];
+      }
+    }
+  } catch (err) { console.error('AI suggestion/weak topics error:', err.message); }
+
+  // Insert AI generated weak topics into DB
+  if (ai_weak_topics.length > 0) {
     const iconMap = { Aptitude: '🧮', Verbal: '📝', Reasoning: '🧠' };
+    const icon = iconMap[subject] || '📚';
+    for (const topic of ai_weak_topics) {
+      const { data: existing } = await supabase.from('weak_topics').select('id').eq('user_id', user.id).eq('topic_name', topic).single();
+      if (existing) {
+        await supabase.from('weak_topics').update({ score_percentage: pct, icon }).eq('id', existing.id);
+      } else {
+        await supabase.from('weak_topics').insert({ user_id: user.id, topic_name: topic, score_percentage: pct, icon });
+      }
+    }
+  } else if (pct < 60) {
+    // Fallback if AI fails to generate specific topics
+    const iconMap = { Aptitude: '🧮', Verbal: '📝', Reasoning: '🧠' };
+    const { data: existing } = await supabase.from('weak_topics').select('id').eq('user_id', user.id).eq('topic_name', subject).single();
     if (existing) {
       await supabase.from('weak_topics').update({ score_percentage: pct, icon: iconMap[subject] || '📚' }).eq('id', existing.id);
     } else {
@@ -464,7 +659,17 @@ app.post('/api/aptitude/submit', async (req, res) => {
     }
   }
 
-  res.json({ success: true, score, total, percentage: pct, result });
+  await supabase.from('assessment_evaluations').insert({
+    user_id: user.id,
+    module: 'aptitude',
+    subject: subject,
+    score,
+    total,
+    ai_suggestion,
+    details: { answers, difficulty }
+  });
+
+  res.json({ success: true, score, total, percentage: pct, result, ai_suggestion });
 });
 
 // ═══════════════════════════════════════════════
@@ -542,7 +747,7 @@ Generate all 10 questions now:`;
           { role: 'user', content: prompt }
         ],
         temperature: 0.8,
-        max_tokens: 2000
+        max_tokens: 1200
       })
     });
 
@@ -640,8 +845,11 @@ Respond ONLY with a valid JSON object. No markdown, no extra text:
       "feedback": "<2-3 sentence feedback>",
       "skipped": <true/false>
     }
-  ]
-}`;
+  ],
+  "weak_topics": ["sub-topic 1", "sub-topic 2"]
+}
+
+Also extract up to 3 specific sub-topics they performed poorly on and put them in the "weak_topics" array. If they did well, leave it empty.`;
 
   try {
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -660,7 +868,7 @@ Respond ONLY with a valid JSON object. No markdown, no extra text:
           { role: 'user', content: prompt }
         ],
         temperature: 0.4,
-        max_tokens: 3000
+        max_tokens: 1500
       })
     });
 
@@ -697,9 +905,21 @@ Respond ONLY with a valid JSON object. No markdown, no extra text:
       .update({ interview_score_avg: newAvg })
       .eq('user_id', user.id);
 
-    // Update weak topics if score < 60%
-    if (scoreNum < 60) {
-      const iconMap = { DSA: '🌳', DBMS: '🗄️', OS: '🖥️', CN: '🌐', C: '⚙️', CPP: '🔷', Java: '☕', Python: '🐍' };
+    // Update weak topics
+    const ai_weak_topics = evalResult.weak_topics || [];
+    const iconMap = { DSA: '🌳', DBMS: '🗄️', OS: '🖥️', CN: '🌐', C: '⚙️', CPP: '🔷', Java: '☕', Python: '🐍' };
+    const icon = iconMap[subject] || '🎤';
+    
+    if (ai_weak_topics.length > 0) {
+      for (const topic of ai_weak_topics) {
+        const { data: existing } = await supabase.from('weak_topics').select('id').eq('user_id', user.id).eq('topic_name', topic).single();
+        if (existing) {
+          await supabase.from('weak_topics').update({ score_percentage: scoreNum, icon }).eq('id', existing.id);
+        } else {
+          await supabase.from('weak_topics').insert({ user_id: user.id, topic_name: topic, score_percentage: scoreNum, icon });
+        }
+      }
+    } else if (scoreNum < 60) {
       const topicName = `${subject} Interview`;
       const { data: existing } = await supabase
         .from('weak_topics')
@@ -709,17 +929,294 @@ Respond ONLY with a valid JSON object. No markdown, no extra text:
         .single();
 
       if (existing) {
-        await supabase.from('weak_topics').update({ score_percentage: scoreNum, icon: iconMap[subject] || '🎤' }).eq('id', existing.id);
+        await supabase.from('weak_topics').update({ score_percentage: scoreNum, icon }).eq('id', existing.id);
       } else {
-        await supabase.from('weak_topics').insert({ user_id: user.id, topic_name: topicName, score_percentage: scoreNum, icon: iconMap[subject] || '🎤' });
+        await supabase.from('weak_topics').insert({ user_id: user.id, topic_name: topicName, score_percentage: scoreNum, icon });
       }
     }
+
+    // Save evaluation to the unified assessment table
+    await supabase.from('assessment_evaluations').insert({
+      user_id: user.id,
+      module: 'interview',
+      subject: subject,
+      score: evalResult.totalScore,
+      total: evalResult.maxScore,
+      ai_suggestion: `AI Interview evaluation completed with score ${evalResult.totalScore}/${evalResult.maxScore}.`,
+      details: evalResult.breakdown
+    });
 
     res.json(evalResult);
 
   } catch (err) {
     console.error('Interview evaluate error:', err.message);
     res.status(500).json({ error: 'Failed to evaluate answers: ' + err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════
+//  UNIFIED ASSESSMENTS & AI FEEDBACK
+// ═══════════════════════════════════════════════
+
+// POST /api/assessments/submit — Generic save and AI feedback endpoint
+app.post('/api/assessments/submit', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { module, subject, score, total, details } = req.body;
+  if (!module) return res.status(400).json({ error: 'module is required' });
+
+  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+  let ai_suggestion = '';
+
+  // Generate personalized AI feedback
+  try {
+    const prompt = `A student just completed a ${module} assessment on ${subject || 'general topics'}.
+They scored ${score} out of ${total} (${percentage}%).
+Provide a brief, encouraging 2-sentence AI feedback analyzing their performance and suggesting exactly what to focus on next.`;
+
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: 'You are an AI learning coach. Provide concise, encouraging, and actionable feedback.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.6,
+        max_tokens: 150
+      })
+    });
+
+    if (groqRes.ok) {
+      const groqData = await groqRes.json();
+      ai_suggestion = groqData.choices?.[0]?.message?.content || 'Keep practicing to improve your skills!';
+    } else {
+      ai_suggestion = 'Keep practicing to improve your skills!';
+    }
+  } catch (err) {
+    console.error('AI suggestion error:', err.message);
+    ai_suggestion = 'Keep practicing to improve your skills!';
+  }
+
+  const { data, error } = await supabase.from('assessment_evaluations').insert({
+    user_id: user.id,
+    module,
+    subject,
+    score,
+    total,
+    ai_suggestion,
+    details: details || {}
+  }).select().single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// GET /api/assessments/history
+app.get('/api/assessments/history', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { data, error } = await supabase
+    .from('assessment_evaluations')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+// ═══════════════════════════════════════════════
+//  IMPROVE ME — AI ROADMAP + NVIDIA QUIZ ROUTES
+//  Add these routes to server.js BEFORE the
+//  "Fallback" comment (before the last app.get('/'))
+// ═══════════════════════════════════════════════
+
+// ─── NVIDIA AI Helper ───
+async function callNvidiaAI(messages, maxTokens = 1024) {
+  const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.NVIDIA_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'nvidia/llama-3.3-nemotron-super-49b-v1',
+      messages,
+      temperature: 0.6,
+      max_tokens: maxTokens,
+      stream: false
+    })
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error('NVIDIA AI error: ' + err);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+// ─── GET /api/improve/roadmap ───
+// Fetches user's weak topics from DB → sends to NVIDIA AI → returns roadmap
+app.get('/api/improve/roadmap', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  // 1. Fetch weak topics from Supabase
+  const { data: weakTopics, error } = await supabase
+    .from('weak_topics')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('score_percentage', { ascending: true })
+    .limit(6);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  if (!weakTopics || weakTopics.length === 0) {
+    return res.json({
+      weakTopics: [],
+      analysis: 'Great job! No weak topics detected. Keep practicing to maintain your performance.',
+      steps: [
+        { title: 'Maintain Your Streak', description: 'Continue daily practice across all subjects to stay sharp.', timeline: 'Ongoing' },
+        { title: 'Attempt Hard Level Quizzes', description: 'Challenge yourself with hard difficulty questions to push your limits.', timeline: 'This Week' },
+        { title: 'Try Mock Interviews', description: 'Practice mock interviews to build confidence for real interviews.', timeline: 'Next Week' }
+      ]
+    });
+  }
+
+  // 2. Build prompt for NVIDIA AI
+  const topicList = weakTopics.map(t => `- ${t.topic_name} (score: ${t.score_percentage}%)`).join('\n');
+
+  const prompt = `You are an expert technical interview coach. A student has the following weak topics based on their quiz, interview, and aptitude performance:
+
+${topicList}
+
+Based on these weak topics, provide:
+1. A 2-sentence honest analysis of their current situation
+2. A step-by-step 4-week improvement roadmap with specific actionable steps
+
+Respond ONLY with valid JSON. No markdown, no extra text:
+{
+  "analysis": "2 sentence analysis here",
+  "steps": [
+    { "title": "Step title", "description": "Detailed actionable description", "timeline": "Week 1" },
+    { "title": "Step title", "description": "Detailed actionable description", "timeline": "Week 2" },
+    { "title": "Step title", "description": "Detailed actionable description", "timeline": "Week 3" },
+    { "title": "Step title", "description": "Detailed actionable description", "timeline": "Week 4" }
+  ]
+}`;
+
+  try {
+    let content = await callNvidiaAI([
+      { role: 'system', content: 'You are an expert interview preparation coach. Always respond with valid JSON only.' },
+      { role: 'user', content: prompt }
+    ], 800);
+
+    // Clean JSON
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const startIdx = content.indexOf('{');
+    const endIdx = content.lastIndexOf('}');
+    if (startIdx === -1 || endIdx === -1) throw new Error('No valid JSON from AI');
+    const aiData = JSON.parse(content.substring(startIdx, endIdx + 1));
+
+    res.json({
+      weakTopics,
+      analysis: aiData.analysis || 'Focus on your weak topics to improve overall performance.',
+      steps: aiData.steps || []
+    });
+
+  } catch (err) {
+    console.error('NVIDIA roadmap error:', err.message);
+    // Fallback roadmap if AI fails
+    res.json({
+      weakTopics,
+      analysis: `You have ${weakTopics.length} weak topic(s) to improve. Focus on the areas with the lowest scores first for maximum impact.`,
+      steps: weakTopics.slice(0, 4).map((t, i) => ({
+        title: `Improve: ${t.topic_name}`,
+        description: `Your current score is ${t.score_percentage}%. Practice 5-10 questions daily on this topic and review concepts thoroughly.`,
+        timeline: `Week ${i + 1}`
+      }))
+    });
+  }
+});
+
+// ─── POST /api/improve/quiz ───
+// Takes weak topic names → NVIDIA AI generates 10 targeted MCQ questions
+app.post('/api/improve/quiz', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { topics } = req.body;
+  if (!topics || !Array.isArray(topics) || topics.length === 0) {
+    return res.status(400).json({ error: 'topics array is required' });
+  }
+
+  const topicList = topics.slice(0, 6).join(', ');
+
+  const prompt = `You are a technical quiz generator. Generate exactly 10 multiple choice questions to help a student improve on these weak topics: ${topicList}
+
+Rules:
+- Distribute questions across all the given topics
+- Each question must have exactly 4 options (A, B, C, D)
+- Only ONE correct answer per question
+- Make questions moderately challenging but educational
+- Each question must include a "topic" field indicating which weak topic it tests
+
+Respond ONLY with a valid JSON array. No markdown, no extra text:
+[
+  {
+    "question": "Question text here?",
+    "topic": "Which weak topic this tests",
+    "option_a": "Option 1",
+    "option_b": "Option 2",
+    "option_c": "Option 3",
+    "option_d": "Option 4",
+    "correct_option": "A"
+  }
+]
+
+Generate all 10 questions now:`;
+
+  try {
+    let content = await callNvidiaAI([
+      { role: 'system', content: 'You are a technical quiz generator. Always respond with a valid JSON array only. No markdown, no extra text.' },
+      { role: 'user', content: prompt }
+    ], 1500);
+
+    // Clean JSON
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const startIdx = content.indexOf('[');
+    const endIdx = content.lastIndexOf(']');
+    if (startIdx === -1 || endIdx === -1) throw new Error('No valid JSON array from AI');
+    const questions = JSON.parse(content.substring(startIdx, endIdx + 1));
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      throw new Error('Invalid questions format from NVIDIA AI');
+    }
+
+    // Validate and sanitize
+    const validated = questions.slice(0, 10).map((q, i) => ({
+      id: `nvidia_${Date.now()}_${i}`,
+      question: q.question || `Question ${i + 1}`,
+      topic: q.topic || topics[i % topics.length],
+      option_a: q.option_a || '',
+      option_b: q.option_b || '',
+      option_c: q.option_c || '',
+      option_d: q.option_d || '',
+      correct_option: (q.correct_option || 'A').toUpperCase()
+    }));
+
+    res.json({ questions: validated });
+
+  } catch (err) {
+    console.error('NVIDIA quiz error:', err.message);
+    res.status(500).json({ error: 'Failed to generate quiz: ' + err.message });
   }
 });
 

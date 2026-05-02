@@ -179,8 +179,31 @@ async function loadWeakTopics() {
         </div>
       </div>
       <div class="topic-percent">${t.score_percentage}%</div>
+      <button class="weak-topic-complete-btn" data-id="${t.id}" title="Mark as Completed" style="background:none; border:none; cursor:pointer; color:#10B981; margin-left:10px; display:flex; align-items:center;">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
     </div>
   `).join('');
+
+  document.querySelectorAll('.weak-topic-complete-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const id = e.currentTarget.getAttribute('data-id');
+      try {
+        const res = await fetch(`${API}/api/dashboard/weak-topics/${id}`, {
+          method: 'DELETE',
+          headers: authHeaders()
+        });
+        if (res.ok) {
+          showToast('Topic marked as completed! 🚀');
+          loadWeakTopics();
+        } else {
+          showToast('Failed to complete topic');
+        }
+      } catch (err) {
+        showToast('Error completing topic');
+      }
+    });
+  });
 }
 
 // ─── Load Goals ───
