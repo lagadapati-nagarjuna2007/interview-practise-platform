@@ -197,7 +197,6 @@
     if (pw.length < 6) { errorBanner.textContent = 'Password must be at least 6 characters.'; errorBanner.style.display = 'block'; return; }
     if (pw !== cpw) { errorBanner.textContent = 'Passwords do not match!'; errorBanner.style.display = 'block'; return; }
     if (!chk) { errorBanner.textContent = 'Please agree to the Terms of Service.'; errorBanner.style.display = 'block'; return; }
-
     btn.textContent = 'Creating account…';
     btn.style.opacity = '0.75';
     btn.disabled = true;

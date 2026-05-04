@@ -17,7 +17,10 @@ function authHeaders() {
 
 async function apiFetch(endpoint) {
   try {
-    const res = await fetch(`${API}${endpoint}`, { headers: authHeaders() });
+    const res = await fetch(`${API}${endpoint}`, { 
+      headers: authHeaders(),
+      cache: 'no-store'
+    });
     if (res.status === 401) { localStorage.removeItem('ios_token'); window.location.href = 'login.html'; return null; }
     return await res.json();
   } catch (e) { console.error('API error:', e); return null; }
@@ -170,7 +173,7 @@ async function loadWeakTopics() {
   const colors = ['t1', 't2', 't3', 't4'];
 
   container.innerHTML = data.map((t, i) => `
-    <div class="topic-item">
+    <div class="topic-item" id="topic-item-${t.id}">
       <div class="topic-icon ${colors[i % 4]}">${t.icon || '📘'}</div>
       <div class="topic-info">
         <div class="topic-name">${t.topic_name}</div>
@@ -179,27 +182,50 @@ async function loadWeakTopics() {
         </div>
       </div>
       <div class="topic-percent">${t.score_percentage}%</div>
-      <button class="weak-topic-complete-btn" data-id="${t.id}" title="Mark as Completed" style="background:none; border:none; cursor:pointer; color:#10B981; margin-left:10px; display:flex; align-items:center;">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-      </button>
+      <button class="weak-topic-complete-btn" data-id="${t.id}" title="Mark as Completed">Complete</button>
     </div>
   `).join('');
 
   document.querySelectorAll('.weak-topic-complete-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
-      const id = e.currentTarget.getAttribute('data-id');
+      const button = e.currentTarget;
+      const id = button.getAttribute('data-id');
+      const topicItem = document.getElementById(`topic-item-${id}`);
+
+      console.log('[WeakTopic] Deleting id:', id);
+
+      // Disable button immediately to prevent double-clicks
+      button.disabled = true;
+      button.textContent = 'Removing...';
+
       try {
         const res = await fetch(`${API}/api/dashboard/weak-topics/${id}`, {
           method: 'DELETE',
           headers: authHeaders()
         });
+        
+        const resBody = await res.json().catch(() => ({}));
+        console.log('[WeakTopic] Delete response:', res.status, resBody);
+        
         if (res.ok) {
+          // Immediately remove the element from DOM with animation
+          if (topicItem) {
+            topicItem.style.transition = 'opacity 0.3s, transform 0.3s';
+            topicItem.style.opacity = '0';
+            topicItem.style.transform = 'translateX(20px)';
+            setTimeout(() => topicItem.remove(), 300);
+          }
           showToast('Topic marked as completed! 🚀');
-          loadWeakTopics();
         } else {
-          showToast('Failed to complete topic');
+          console.error('Delete failed:', resBody);
+          button.disabled = false;
+          button.textContent = 'Complete';
+          showToast('Failed to complete topic: ' + (resBody.error || 'Unknown error'));
         }
       } catch (err) {
+        console.error('Delete error:', err);
+        button.disabled = false;
+        button.textContent = 'Complete';
         showToast('Error completing topic');
       }
     });
@@ -293,5 +319,31 @@ async function init() {
     loadGoals()
   ]);
 }
+// ─── Logout Modal ───
+function openLogoutModal() {
+  // Get email from token or profile
+  const name = document.getElementById('sidebarName').textContent;
+  // Try to get email from Supabase token
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    document.getElementById('logoutEmail').textContent = payload.email || name;
+  } catch(e) {
+    document.getElementById('logoutEmail').textContent = name;
+  }
+  document.getElementById('logoutModal').classList.add('active');
+}
 
+function closeLogoutModal() {
+  document.getElementById('logoutModal').classList.remove('active');
+}
+
+function confirmLogout() {
+  localStorage.removeItem('ios_token');
+  window.location.href = 'login.html';
+}
+
+// Close modal on backdrop click
+document.getElementById('logoutModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeLogoutModal();
+});
 init();

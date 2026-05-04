@@ -11,7 +11,13 @@ const PORT = process.env.PORT || 3000;
 // ─── Supabase Client ───
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
 // ─── Middleware ───
@@ -84,6 +90,86 @@ app.post('/api/auth/login', async (req, res) => {
   if (error) return res.status(401).json({ error: error.message });
   res.json({ token: data.session.access_token, user: data.user });
 });
+// ═══════════════════════════════════════════════
+//  FORGOT PASSWORD — OTP FLOW
+// ═══════════════════════════════════════════════
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+
+const otpStore = {}; // { email: { otp, expiresAt } }
+
+const mailer = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASS
+  }
+});
+
+// POST /api/auth/send-otp
+app.post('/api/auth/send-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required.' });
+
+  // Check if email exists in Supabase Auth
+  const { data: { users }, error } = await supabase.auth.admin.listUsers();
+  if (error) return res.status(500).json({ error: 'Server error.' });
+
+  const exists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
+  if (!exists) return res.status(404).json({ error: 'No account found with this email.' });
+
+  const otp = crypto.randomInt(100000, 999999).toString();
+  otpStore[email.toLowerCase()] = { otp, expiresAt: Date.now() + 5 * 60 * 1000 };
+
+  try {
+    await mailer.sendMail({
+      from: `"InterviewOS" <${process.env.GMAIL_USER}>`,
+      to: email,
+      subject: 'Your OTP for Password Reset – InterviewOS',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:400px;margin:auto;padding:30px;border-radius:12px;border:1px solid #e5e7eb;">
+          <h2 style="color:#7c3aed;">InterviewOS Password Reset</h2>
+          <p>Use the OTP below to reset your password. It expires in <b>5 minutes</b>.</p>
+          <div style="font-size:36px;font-weight:bold;letter-spacing:10px;text-align:center;color:#7c3aed;padding:20px 0;">${otp}</div>
+          <p style="color:#6b7280;font-size:13px;">If you did not request this, ignore this email.</p>
+        </div>`
+    });
+    res.json({ success: true, message: 'OTP sent to your email.' });
+  } catch (e) {
+    console.error('Mailer error:', e.message);
+    res.status(500).json({ error: 'Failed to send email. Check Gmail config.' });
+  }
+});
+
+// POST /api/auth/verify-otp
+app.post('/api/auth/verify-otp', (req, res) => {
+  const { email, otp } = req.body;
+  const record = otpStore[email?.toLowerCase()];
+  if (!record) return res.status(400).json({ error: 'No OTP requested for this email.' });
+  if (Date.now() > record.expiresAt) return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+  if (record.otp !== otp) return res.status(400).json({ error: 'Incorrect OTP.' });
+  res.json({ success: true });
+});
+
+// POST /api/auth/reset-password
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, newPassword } = req.body;
+  if (!email || !newPassword) return res.status(400).json({ error: 'Email and new password are required.' });
+  if (newPassword.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+
+  // Get user ID from Supabase Auth
+  const { data: { users }, error: listErr } = await supabase.auth.admin.listUsers();
+  if (listErr) return res.status(500).json({ error: 'Server error.' });
+
+  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+
+  const { error } = await supabase.auth.admin.updateUserById(user.id, { password: newPassword });
+  if (error) return res.status(400).json({ error: error.message });
+
+  delete otpStore[email.toLowerCase()];
+  res.json({ success: true, message: 'Password reset successfully.' });
+});
 
 // ═══════════════════════════════════════════════
 //  DASHBOARD DATA ROUTES
@@ -116,7 +202,9 @@ app.get('/api/dashboard/progress', async (req, res) => {
 app.get('/api/dashboard/weak-topics', async (req, res) => {
   const user = await getUser(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  console.log(`[GET weak-topics] user_id=${user.id}, email=${user.email}`);
   const { data, error } = await supabase.from('weak_topics').select('*').eq('user_id', user.id).order('score_percentage', { ascending: true });
+  console.log(`[GET weak-topics] found ${data ? data.length : 0} topics`);
   if (error) return res.status(400).json({ error: error.message });
   res.json(data);
 });
@@ -124,11 +212,66 @@ app.get('/api/dashboard/weak-topics', async (req, res) => {
 app.delete('/api/dashboard/weak-topics/:id', async (req, res) => {
   const user = await getUser(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
-  const { id } = req.params;
-  const { error } = await supabase.from('weak_topics').delete().eq('id', id).eq('user_id', user.id);
+  const rawId = req.params.id;
+  console.log(`[DELETE weak-topic] rawId=${rawId}, user_id=${user.id}`);
+  
+  // First verify the row exists and belongs to this user
+  const { data: existing, error: lookupErr } = await supabase
+    .from('weak_topics')
+    .select('id, user_id, topic_name')
+    .eq('id', rawId)
+    .single();
+  
+  if (lookupErr || !existing) {
+    console.log(`[DELETE weak-topic] Row not found for id=${rawId}`);
+    return res.status(404).json({ error: 'Topic not found' });
+  }
+  
+  if (existing.user_id !== user.id) {
+    return res.status(403).json({ error: 'Not your topic' });
+  }
+  
+  // Try JS client delete first
+  const { data, error } = await supabase
+    .from('weak_topics')
+    .delete()
+    .eq('id', rawId)
+    .select();
+  
+  console.log(`[DELETE weak-topic] JS client result: deleted=${data?.length || 0}, error=${error?.message || 'none'}`);
+  
+  // If JS client delete failed (RLS blocking), use direct REST API call
+  if ((!data || data.length === 0) && !error) {
+    console.log(`[DELETE weak-topic] JS client returned 0 rows, falling back to direct REST API...`);
+    try {
+      const directRes = await fetch(
+        `${process.env.SUPABASE_URL}/rest/v1/weak_topics?id=eq.${rawId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          }
+        }
+      );
+      const directData = await directRes.json().catch(() => []);
+      console.log(`[DELETE weak-topic] Direct REST result: status=${directRes.status}, data=`, JSON.stringify(directData));
+      
+      if (directRes.ok) {
+        return res.json({ success: true, deleted: directData });
+      }
+    } catch (fetchErr) {
+      console.error(`[DELETE weak-topic] Direct REST error:`, fetchErr.message);
+    }
+    return res.status(500).json({ error: 'Failed to delete topic' });
+  }
+  
   if (error) return res.status(400).json({ error: error.message });
-  res.json({ success: true });
+  res.json({ success: true, deleted: data });
 });
+
 
 app.get('/api/dashboard/goals', async (req, res) => {
   const user = await getUser(req);
@@ -887,9 +1030,14 @@ Also extract up to 3 specific sub-topics they performed poorly on and put them i
     content = content.substring(startIdx, endIdx + 1);
 
     const evalResult = JSON.parse(content);
+    
+    // Fallbacks in case model uses snake_case
+    evalResult.totalScore = evalResult.totalScore ?? evalResult.total_score ?? 0;
+    evalResult.maxScore = evalResult.maxScore ?? evalResult.max_score ?? 10;
+    evalResult.breakdown = evalResult.breakdown || [];
 
     // Save to DB — update interview_score_avg
-    const scoreNum = Math.round((evalResult.totalScore / 10) * 100);
+    const scoreNum = Math.round((evalResult.totalScore / evalResult.maxScore) * 100);
     const { data: currentStats } = await supabase
       .from('user_stats')
       .select('interview_score_avg')
@@ -1047,7 +1195,7 @@ async function callNvidiaAI(messages, maxTokens = 1024) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'nvidia/llama-3.3-nemotron-super-49b-v1',
+    model: 'nvidia/nemotron-3-super-120b-a12b',
       messages,
       temperature: 0.6,
       max_tokens: maxTokens,
@@ -1219,11 +1367,220 @@ Generate all 10 questions now:`;
     res.status(500).json({ error: 'Failed to generate quiz: ' + err.message });
   }
 });
+// ═══════════════════════════════════════════════════════════════
+//  HR MOCK INTERVIEW ROUTES
+//  PASTE THIS ENTIRE BLOCK into server.js
+//  BEFORE the line:  // ─── Fallback ───
+//  (i.e. before:  app.get('/', (req, res) => res.sendFile(...))  )
+// ═══════════════════════════════════════════════════════════════
+
+// ─── POST /api/hr-interview/questions ───
+// Receives the full HR question bank → NVIDIA Nemotron 3 Super picks 10 varied questions
+app.post('/api/hr-interview/questions', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { questionBank } = req.body;
+  if (!questionBank || !Array.isArray(questionBank)) {
+    return res.status(400).json({ error: 'questionBank array is required' });
+  }
+
+  // Build a flat list of all questions with their category
+  const allQuestions = [];
+  questionBank.forEach(cat => {
+    cat.questions.forEach(q => {
+      allQuestions.push({ question: q, category: cat.category });
+    });
+  });
+
+  // Build the prompt — give the AI the full bank and ask it to pick 10 diverse ones
+  const bankText = questionBank.map(cat =>
+    `Category: ${cat.category}\n` + cat.questions.map(q => `  - ${q}`).join('\n')
+  ).join('\n\n');
+
+  const prompt = `You are an experienced HR interviewer for a tech company. Below is an HR question bank organized by category:
+
+${bankText}
+
+Select exactly 10 questions for a mock HR interview. Follow these rules:
+1. Pick at most 2 questions per category so the session is diverse
+2. Mix easy (self-intro, strengths) and harder (behavioral, pressure) questions
+3. Do NOT rephrase — use the exact question text from the bank
+4. Return the category name for each selected question
+
+Respond ONLY with a valid JSON array. No markdown, no extra text:
+[
+  { "question": "exact question text from the bank", "category": "Category Name" },
+  ...
+]
+
+Select all 10 now:`;
+
+  try {
+    let content = await callNvidiaAI([
+      {
+        role: 'system',
+        content: 'You are an HR interview question selector. Always respond with a valid JSON array only. No markdown, no extra text, no preamble.'
+      },
+      { role: 'user', content: prompt }
+    ], 800);
+
+    // Clean JSON
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const startIdx = content.indexOf('[');
+    const endIdx   = content.lastIndexOf(']');
+    if (startIdx === -1 || endIdx === -1) throw new Error('No valid JSON array from AI');
+
+    const rawQuestions = JSON.parse(content.substring(startIdx, endIdx + 1));
+
+    if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) {
+      throw new Error('Invalid questions format from AI');
+    }
+
+    // Validate — ensure each item has question + category
+    const validated = rawQuestions.slice(0, 10).map((q, i) => ({
+      id: `hr_${Date.now()}_${i}`,
+      question: q.question || allQuestions[i]?.question || `HR Question ${i + 1}`,
+      category: q.category || 'HR Question'
+    }));
+
+    res.json(validated);
+
+  } catch (err) {
+    console.error('HR question generation error:', err.message);
+
+    // Fallback: manually pick 10 spread across categories
+    const fallback = [];
+    const perCat = Math.ceil(10 / questionBank.length);
+    for (const cat of questionBank) {
+      const pick = cat.questions.slice(0, perCat);
+      pick.forEach(q => fallback.push({ question: q, category: cat.category }));
+      if (fallback.length >= 10) break;
+    }
+    res.json(fallback.slice(0, 10).map((q, i) => ({
+      id: `hr_fallback_${i}`,
+      question: q.question,
+      category: q.category
+    })));
+  }
+});
+
+
+// ─── POST /api/hr-interview/evaluate ───
+// Evaluates all 10 HR answers using NVIDIA Nemotron 3 Super
+app.post('/api/hr-interview/evaluate', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { answers } = req.body;
+  if (!Array.isArray(answers) || answers.length === 0) {
+    return res.status(400).json({ error: 'answers array is required' });
+  }
+
+  // Build answers text for the prompt
+  const answersText = answers.map((a, i) => {
+    if (a.skipped || !a.userAnswer || a.userAnswer.trim() === '') {
+      return `Q${i + 1} [${a.category || 'HR'}]: ${a.question}\nAnswer: [SKIPPED / NO ANSWER]`;
+    }
+    return `Q${i + 1} [${a.category || 'HR'}]: ${a.question}\nAnswer: ${a.userAnswer}`;
+  }).join('\n\n');
+
+  const prompt = `You are a senior HR interviewer evaluating a candidate's written answers to HR interview questions.
+
+Evaluate each of the 10 answers below and give:
+1. A score from 0 to 10
+2. Brief, constructive feedback (2-3 sentences) focused on communication quality, clarity, honesty, and relevance
+
+Scoring guide:
+- 9-10: Excellent — clear, specific, confident, shows self-awareness
+- 7-8:  Good — mostly solid, minor gaps in detail or structure  
+- 5-6:  Average — generic or vague, lacks specific examples
+- 3-4:  Weak — unclear, off-topic, or very brief
+- 1-2:  Very poor — mostly irrelevant or incomprehensible
+- 0:    Skipped or blank
+
+${answersText}
+
+Respond ONLY with a valid JSON object. No markdown, no extra text:
+{
+  "totalScore": <number 0-10, the average of all individual scores rounded to 1 decimal>,
+  "maxScore": 10,
+  "breakdown": [
+    {
+      "question": "<exact question text>",
+      "userAnswer": "<the candidate's answer or empty string>",
+      "category": "<category name>",
+      "score": <0-10>,
+      "feedback": "<2-3 sentence HR-focused feedback>",
+      "skipped": <true or false>
+    }
+  ]
+}
+
+Be honest but encouraging. Evaluate all 10 now:`;
+
+  try {
+    let content = await callNvidiaAI([
+      {
+        role: 'system',
+        content: 'You are a professional HR interviewer and talent evaluator. Evaluate answers honestly and fairly. Always respond with valid JSON only, no markdown, no extra text.'
+      },
+      { role: 'user', content: prompt }
+    ], 2000);
+
+    // Clean JSON
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const startIdx = content.indexOf('{');
+    const endIdx   = content.lastIndexOf('}');
+    if (startIdx === -1 || endIdx === -1) throw new Error('No valid JSON found');
+
+    const evalResult = JSON.parse(content.substring(startIdx, endIdx + 1));
+
+    // Normalise field names
+    evalResult.totalScore = evalResult.totalScore ?? evalResult.total_score ?? 0;
+    evalResult.maxScore   = evalResult.maxScore   ?? evalResult.max_score   ?? 10;
+    evalResult.breakdown  = evalResult.breakdown  || [];
+
+    // Save to DB — update interview_score_avg
+    const scoreNum = Math.round((evalResult.totalScore / evalResult.maxScore) * 100);
+    const { data: currentStats } = await supabase
+      .from('user_stats')
+      .select('interview_score_avg')
+      .eq('user_id', user.id)
+      .single();
+
+    const newAvg = currentStats
+      ? Math.round((currentStats.interview_score_avg + scoreNum) / 2)
+      : scoreNum;
+
+    await supabase
+      .from('user_stats')
+      .update({ interview_score_avg: newAvg })
+      .eq('user_id', user.id);
+
+    // Save to assessment_evaluations
+    await supabase.from('assessment_evaluations').insert({
+      user_id: user.id,
+      module: 'hr_interview',
+      subject: 'HR Round',
+      score: evalResult.totalScore,
+      total: evalResult.maxScore,
+      ai_suggestion: `HR Mock Interview completed. Score: ${evalResult.totalScore}/${evalResult.maxScore}.`,
+      details: evalResult.breakdown
+    });
+
+    res.json(evalResult);
+
+  } catch (err) {
+    console.error('HR evaluation error:', err.message);
+    res.status(500).json({ error: 'Failed to evaluate HR answers: ' + err.message });
+  }
+});
 
 // ─── Fallback ───
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
 
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
   console.log(`🚀 InterviewOS server running at http://localhost:${PORT}`);
   try {
     const { error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
@@ -1232,4 +1589,15 @@ app.listen(PORT, async () => {
   } catch (err) {
     console.log(`❌ Supabase connection FAILED: ${err.message}`);
   }
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ Port ${PORT} is already in use!`);
+    console.error(`   Run this to free it:  taskkill /F /PID $(netstat -ano | findstr :${PORT})`);
+    console.error(`   Or use a different port:  PORT=3001 node server.js\n`);
+  } else {
+    console.error('❌ Server error:', err.message);
+  }
+  process.exit(1);
 });

@@ -113,13 +113,6 @@
           </button>
         </div>
       </div>
-
-      <!-- Remember me -->
-      <div class="check-row" style="margin-bottom: 24px;">
-        <input type="checkbox" id="remember"/>
-        <label for="remember">Remember me</label>
-      </div>
-
       <!-- Login button -->
       <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Login</button>
 
@@ -235,6 +228,174 @@
     }
   }
 </script>
+<!-- ══ FORGOT PASSWORD MODAL ══ -->
+<div id="fpModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;justify-content:center;align-items:center;">
+  <div style="background:#fff;padding:36px 30px;border-radius:20px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.15);text-align:center;position:relative;">
+    <button onclick="closeFpModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;">✕</button>
 
+    <!-- Step 1: Email -->
+    <div id="fpStep1">
+      <div style="font-size:32px;">🔐</div>
+      <h3 style="margin:10px 0 4px;color:#111827;">Forgot Password?</h3>
+      <p style="color:#6b7280;font-size:13px;margin-bottom:20px;">Enter your registered email and we'll send you a 6-digit OTP.</p>
+      <input id="fpEmail" type="email" placeholder="Enter your email"
+        style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid #e5e7eb;font-size:14px;box-sizing:border-box;outline:none;margin-bottom:14px;"/>
+      <button onclick="sendOtp()"
+        style="width:100%;padding:12px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">
+        Send OTP
+      </button>
+      <p id="fpMsg1" style="margin-top:10px;font-size:13px;color:#dc2626;"></p>
+    </div>
+
+    <!-- Step 2: OTP -->
+    <div id="fpStep2" style="display:none;">
+      <div style="font-size:32px;">📩</div>
+      <h3 style="margin:10px 0 4px;color:#111827;">Enter OTP</h3>
+      <p id="fpOtpSub" style="color:#6b7280;font-size:13px;margin-bottom:20px;"></p>
+      <input id="fpOtp" type="text" placeholder="6-digit OTP" maxlength="6"
+        style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid #e5e7eb;font-size:22px;letter-spacing:8px;text-align:center;box-sizing:border-box;outline:none;margin-bottom:14px;"/>
+      <button onclick="verifyOtp()"
+        style="width:100%;padding:12px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">
+        Verify OTP
+      </button>
+      <p style="margin-top:10px;font-size:12px;color:#6b7280;">
+        Didn't receive it? <a href="#" onclick="backToStep1()" style="color:#7c3aed;font-weight:600;">Resend OTP</a>
+      </p>
+      <p id="fpMsg2" style="margin-top:6px;font-size:13px;color:#dc2626;"></p>
+    </div>
+
+    <!-- Step 3: New Password -->
+    <div id="fpStep3" style="display:none;">
+      <div style="font-size:32px;">🔒</div>
+      <h3 style="margin:10px 0 4px;color:#111827;">Set New Password</h3>
+      <p style="color:#6b7280;font-size:13px;margin-bottom:20px;">Choose a strong password (min. 6 characters).</p>
+      <input id="fpNewPw" type="password" placeholder="New password"
+        style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid #e5e7eb;font-size:14px;box-sizing:border-box;outline:none;margin-bottom:10px;"/>
+      <input id="fpConfPw" type="password" placeholder="Confirm new password"
+        style="width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid #e5e7eb;font-size:14px;box-sizing:border-box;outline:none;margin-bottom:14px;"/>
+      <button onclick="resetPassword()"
+        style="width:100%;padding:12px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">
+        Reset Password
+      </button>
+      <p id="fpMsg3" style="margin-top:10px;font-size:13px;color:#dc2626;"></p>
+    </div>
+
+    <!-- Step 4: Success -->
+    <div id="fpStep4" style="display:none;">
+      <div style="font-size:48px;">✅</div>
+      <h3 style="color:#16a34a;margin:10px 0 6px;">Password Reset!</h3>
+      <p style="color:#6b7280;font-size:13px;">Your password has been updated. Redirecting to login...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  let fpEmailVal = '';
+
+  // Hook into existing .forgot-link
+  document.querySelector('.forgot-link').addEventListener('click', function(e) {
+    e.preventDefault();
+    openFpModal();
+  });
+
+  function openFpModal() {
+    document.getElementById('fpModal').style.display = 'flex';
+    backToStep1();
+  }
+  function closeFpModal() {
+    document.getElementById('fpModal').style.display = 'none';
+  }
+  function showStep(n) {
+    [1,2,3,4].forEach(i => document.getElementById('fpStep'+i).style.display = i===n ? 'block' : 'none');
+  }
+  function backToStep1() {
+    document.getElementById('fpEmail').value = '';
+    document.getElementById('fpMsg1').textContent = '';
+    showStep(1);
+  }
+  function setMsg(step, msg, color='#dc2626') {
+    const el = document.getElementById('fpMsg'+step);
+    if(el){ el.textContent = msg; el.style.color = color; }
+  }
+
+  async function sendOtp() {
+    fpEmailVal = document.getElementById('fpEmail').value.trim().toLowerCase();
+    setMsg(1, '');
+    if (!fpEmailVal) { setMsg(1, 'Please enter your email.'); return; }
+
+    const btn = event.target;
+    btn.textContent = 'Sending…'; btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email: fpEmailVal })
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg(1, data.error || 'Failed to send OTP.'); return; }
+      document.getElementById('fpOtpSub').textContent = `OTP sent to ${fpEmailVal}. Check your inbox.`;
+      document.getElementById('fpOtp').value = '';
+      setMsg(2, '');
+      showStep(2);
+    } catch(e) {
+      setMsg(1, 'Server error. Please try again.');
+    } finally {
+      btn.textContent = 'Send OTP'; btn.disabled = false;
+    }
+  }
+
+  async function verifyOtp() {
+    const otp = document.getElementById('fpOtp').value.trim();
+    setMsg(2, '');
+    if (otp.length !== 6) { setMsg(2, 'Please enter the 6-digit OTP.'); return; }
+
+    const btn = event.target;
+    btn.textContent = 'Verifying…'; btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email: fpEmailVal, otp })
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg(2, data.error || 'Invalid OTP.'); return; }
+      document.getElementById('fpNewPw').value = '';
+      document.getElementById('fpConfPw').value = '';
+      setMsg(3, '');
+      showStep(3);
+    } catch(e) {
+      setMsg(2, 'Server error. Please try again.');
+    } finally {
+      btn.textContent = 'Verify OTP'; btn.disabled = false;
+    }
+  }
+
+  async function resetPassword() {
+    const newPw = document.getElementById('fpNewPw').value;
+    const confPw = document.getElementById('fpConfPw').value;
+    setMsg(3, '');
+    if (!newPw || !confPw) { setMsg(3, 'Please fill both fields.'); return; }
+    if (newPw.length < 6) { setMsg(3, 'Password must be at least 6 characters.'); return; }
+    if (newPw !== confPw) { setMsg(3, 'Passwords do not match.'); return; }
+
+    const btn = event.target;
+    btn.textContent = 'Resetting…'; btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email: fpEmailVal, newPassword: newPw })
+      });
+      const data = await res.json();
+      if (!res.ok) { setMsg(3, data.error || 'Reset failed.'); return; }
+      showStep(4);
+      setTimeout(() => { closeFpModal(); }, 2500);
+    } catch(e) {
+      setMsg(3, 'Server error. Please try again.');
+    } finally {
+      btn.textContent = 'Reset Password'; btn.disabled = false;
+    }
+  }
+</script>
 </body>
 </html>
