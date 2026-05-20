@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
+const FormDataNode = require('form-data');
 const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
@@ -194,9 +196,45 @@ app.get('/api/dashboard/stats', async (req, res) => {
 app.get('/api/dashboard/progress', async (req, res) => {
   const user = await getUser(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
-  const { data, error } = await supabase.from('progress_data').select('*').eq('user_id', user.id).order('id', { ascending: true });
+
+  // Get Monday of current week
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun,1=Mon,...
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  monday.setHours(0, 0, 0, 0);
+
+  const { data, error } = await supabase
+    .from('assessment_evaluations')
+    .select('module, score, total, created_at')
+    .eq('user_id', user.id)
+    .gte('created_at', monday.toISOString());
+
   if (error) return res.status(400).json({ error: error.message });
-  res.json(data);
+
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const result = days.map((day, i) => {
+    const targetDay = (i + 1) % 7; // Mon=1...Sat=6, Sun=0
+    const dayEntries = (data || []).filter(d => new Date(d.created_at).getDay() === targetDay);
+
+    const avg = (modules) => {
+      const entries = dayEntries.filter(d => modules.includes(d.module) && d.total > 0);
+      if (!entries.length) return 0;
+      const sum = entries.reduce((acc, d) => acc + Math.round((d.score / d.total) * 100), 0);
+      return Math.round(sum / entries.length);
+    };
+
+    return {
+      day,
+      coding_score:    avg(['coding']),
+      quiz_score:      avg(['quiz']),
+      interview_score: avg(['interview', 'ai_voice_interview']),
+      aptitude_score:  avg(['aptitude', 'verbal', 'reasoning']),
+    };
+  });
+
+  res.json(result);
 });
 
 app.get('/api/dashboard/weak-topics', async (req, res) => {
@@ -1195,7 +1233,7 @@ async function callNvidiaAI(messages, maxTokens = 1024) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-    model: 'nvidia/nemotron-3-super-120b-a12b',
+    model:'nvidia/llama-3.3-nemotron-super-49b-v1', 
       messages,
       temperature: 0.6,
       max_tokens: maxTokens,
@@ -1574,6 +1612,362 @@ Be honest but encouraging. Evaluate all 10 now:`;
   } catch (err) {
     console.error('HR evaluation error:', err.message);
     res.status(500).json({ error: 'Failed to evaluate HR answers: ' + err.message });
+  }
+});
+// ═══════════════════════════════════════════════════════════════
+//  ADD THESE ROUTES TO server.js  — paste just BEFORE the final
+//  "app.get('/', ...)" fallback route at the bottom
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Groq client for AI Voice Interview (separate key) ───
+const Groq_AIInterview = require('groq-sdk'); // already installed
+const groqAIInterview = new Groq_AIInterview({
+  apiKey: process.env.GROQ_AI_INTERVIEW_KEY
+});
+const AI_INTERVIEW_MODEL = 'openai/gpt-oss-120b'; // same model as aptitude
+
+async function callAIInterviewGroq(messages, maxTokens = 1200) {
+  const response = await groqAIInterview.chat.completions.create({
+    model: AI_INTERVIEW_MODEL,
+    messages,
+    max_tokens: maxTokens,
+    temperature: 0.7
+  });
+  return response.choices[0]?.message?.content || '';
+}
+
+// ─── POST /api/ai-interview/lang-questions ───
+// Generates 10 programming language questions based on student's selected languages
+app.post('/api/ai-interview/lang-questions', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { languages } = req.body;
+  if (!Array.isArray(languages) || languages.length === 0) {
+    return res.status(400).json({ error: 'languages array is required' });
+  }
+
+  const langList = languages.join(', ');
+
+  const prompt = `You are a senior technical interviewer for software engineering roles.
+
+A student has selected the following programming languages they know: ${langList}
+
+Generate exactly 10 technical interview questions based on these languages. Follow these rules:
+1. Distribute questions across the languages the student knows (don't focus on just one)
+2. Cover concepts like: syntax, data structures, OOP, memory management, error handling, performance, common libraries/frameworks
+3. Mix difficulty: 3 easy, 4 medium, 3 hard
+4. Make questions specific to the language (e.g. for Python ask about GIL or decorators, for C++ ask about pointers or RAII)
+5. Do NOT ask generic questions that apply to all languages
+6. Use the exact language name as the category
+
+Respond ONLY with a valid JSON array. No markdown, no extra text:
+[
+  { "question": "question text here", "category": "Language Name" },
+  ...10 items...
+]`;
+
+  try {
+    let content = await callAIInterviewGroq([
+      { role: 'system', content: 'You are a technical interviewer. Always respond with valid JSON array only. No markdown, no preamble, no extra text.' },
+      { role: 'user', content: prompt }
+    ], 1200);
+
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const start = content.indexOf('[');
+    const end   = content.lastIndexOf(']');
+    if (start === -1 || end === -1) throw new Error('No valid JSON array');
+
+    const questions = JSON.parse(content.substring(start, end + 1));
+    const validated = questions.slice(0, 10).map((q, i) => ({
+      id: `lang_${Date.now()}_${i}`,
+      question: q.question || `Explain a key concept in ${languages[0]}`,
+      category: q.category || languages[i % languages.length]
+    }));
+
+    res.json(validated);
+
+  } catch (err) {
+    console.error('[AI Interview] Lang questions error:', err.message);
+    // Fallback: generic questions spread across languages
+    const fallback = languages.flatMap((lang, li) => [
+      { id: `lang_fb_${li}_1`, question: `Explain the key features of ${lang} and when you would use it over other languages.`, category: lang },
+      { id: `lang_fb_${li}_2`, question: `What is the memory management model in ${lang}? Explain with an example.`, category: lang }
+    ]).slice(0, 10);
+    while (fallback.length < 10) {
+      fallback.push({ id: `lang_fb_ex_${fallback.length}`, question: `What are the best practices for writing clean code in ${languages[0]}?`, category: languages[0] });
+    }
+    res.json(fallback.slice(0, 10));
+  }
+});
+
+// ─── POST /api/ai-interview/project-questions ───
+// Generates 10 project-based questions using selected frontend + backend + languages
+app.post('/api/ai-interview/project-questions', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { frontend, backend, languages } = req.body;
+  if (!Array.isArray(frontend) || !Array.isArray(backend)) {
+    return res.status(400).json({ error: 'frontend and backend arrays are required' });
+  }
+
+  const frontendStr  = frontend.join(', ')  || 'HTML, CSS, JavaScript';
+  const backendStr   = backend.join(', ')   || 'Node.js, Express';
+  const languageStr  = languages?.join(', ') || 'JavaScript';
+
+  // Based on the provided project question categories from the txt file
+  const prompt = `You are a senior technical interviewer conducting a PROJECT-BASED interview for a student developer.
+
+The student's project uses:
+- Programming Languages: ${languageStr}
+- Frontend Technologies: ${frontendStr}
+- Backend Technologies & Databases: ${backendStr}
+
+Generate exactly 10 project-based interview questions tailored to THEIR specific tech stack. 
+Cover these categories (pick based on their stack):
+1. Project Overview (explain the project, what problem it solves, who uses it)
+2. Tech Stack Justification (why they chose these specific technologies, trade-offs)
+3. Architecture (how frontend connects to backend, data flow, API design)
+4. Database Design (schema, relationships, query optimisation) — ask about their specific DB
+5. Feature Deep-Dive (specific features: auth, CRUD, real-time features if any)
+6. Challenges & Bug Fixes (real problems they might face with their stack)
+7. Security (how they secure data, authentication, authorization)
+8. Scalability (what happens under heavy load with their setup)
+
+Rules:
+- Questions must be SPECIFIC to their stack (e.g. if they use Supabase, ask about Row Level Security; if React, ask about state management; if MongoDB, ask about indexing)
+- Mix conceptual and practical questions
+- Don't ask generic questions — tie each question to their specific technologies
+- Use the appropriate category name
+
+Respond ONLY with a valid JSON array. No markdown, no extra text:
+[
+  { "question": "question text here", "category": "Category Name" },
+  ...10 items...
+]`;
+
+  try {
+    let content = await callAIInterviewGroq([
+      { role: 'system', content: 'You are a senior technical interviewer specialising in project-based evaluation. Always respond with valid JSON array only. No markdown, no preamble.' },
+      { role: 'user', content: prompt }
+    ], 1400);
+
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const start = content.indexOf('[');
+    const end   = content.lastIndexOf(']');
+    if (start === -1 || end === -1) throw new Error('No valid JSON array');
+
+    const questions = JSON.parse(content.substring(start, end + 1));
+    const validated = questions.slice(0, 10).map((q, i) => ({
+      id: `proj_${Date.now()}_${i}`,
+      question: q.question || `Explain how you implemented a key feature using ${frontendStr.split(',')[0]}`,
+      category: q.category || 'Project'
+    }));
+
+    res.json(validated);
+
+  } catch (err) {
+    console.error('[AI Interview] Project questions error:', err.message);
+    // Fallback project questions
+    const fallback = [
+      { question: `Explain your project. What problem does it solve and who are the target users?`, category: 'Project Overview' },
+      { question: `Why did you choose ${backendStr.split(',')[0]} for your backend instead of alternatives?`, category: 'Tech Stack' },
+      { question: `How does your frontend (${frontendStr.split(',')[0]}) communicate with your backend? Explain the data flow.`, category: 'Architecture' },
+      { question: `How did you design your database schema? What relationships exist between your tables or collections?`, category: 'Database Design' },
+      { question: `Explain how authentication works in your project. How do you protect routes?`, category: 'Feature Deep-Dive' },
+      { question: `What was the most challenging bug you faced in your project and how did you debug it?`, category: 'Challenges' },
+      { question: `What is your biggest weakness or limitation in your project's current architecture?`, category: 'Challenges' },
+      { question: `How do you secure user data in your application? What security measures have you implemented?`, category: 'Security' },
+      { question: `What would you improve or add if you had more time? What is the future scope?`, category: 'Improvement' },
+      { question: `If 10,000 users used your application simultaneously, what would break first and how would you fix it?`, category: 'Scalability' }
+    ].map((q, i) => ({ id: `proj_fb_${i}`, ...q }));
+    res.json(fallback);
+  }
+});
+
+// ─── POST /api/ai-interview/transcribe ───
+// Receives audio blob, sends to Groq Whisper, returns transcript
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 } // 25 MB max
+});
+
+app.post('/api/ai-interview/transcribe', upload.single('audio'), async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  if (!req.file) return res.status(400).json({ error: 'No audio file received' });
+
+  console.log('[Groq Whisper] File received:', req.file.originalname, '| size:', req.file.size, 'bytes | mime:', req.file.mimetype);
+
+  // Groq Whisper only accepts: mp3, mp4, mpeg, mpga, m4a, wav, webm
+  // Map browser mime types to correct extension
+  const mimeToExt = {
+    'audio/webm':           'webm',
+    'audio/webm;codecs=opus':'webm',
+    'audio/ogg':            'ogg',
+    'audio/ogg;codecs=opus':'ogg',
+    'audio/mp4':            'mp4',
+    'audio/mpeg':           'mp3',
+    'audio/wav':            'wav',
+  };
+  const mime = (req.file.mimetype || 'audio/webm').split(';')[0].trim();
+  const ext  = mimeToExt[mime] || 'webm';
+  const filename = `answer.${ext}`;
+
+  try {
+    // Use Node.js native Blob + FormData (Node 18+) — the form-data npm package
+    // doesn't work correctly with native fetch() and causes "multipart: NextPart: EOF"
+    const audioBlob = new Blob([req.file.buffer], { type: mime });
+    const form = new FormData();
+    form.append('file', audioBlob, filename);
+    form.append('model', 'whisper-large-v3');
+    form.append('language', 'en');
+    form.append('response_format', 'json');
+    form.append('prompt',
+      'Technical interview answer about programming, software development, ' +
+      'data structures, algorithms, MATLAB, Python, Java, databases, APIs, ' +
+      'machine learning, React, Node.js, system design.'
+    );
+
+    console.log('[Groq Whisper] Sending to Groq API with filename:', filename);
+
+    const groqRes = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: form
+    });
+
+    const rawText = await groqRes.text();
+    console.log('[Groq Whisper] Response status:', groqRes.status);
+    console.log('[Groq Whisper] Response body:', rawText);
+
+    if (!groqRes.ok) {
+      return res.status(500).json({ error: 'Groq Whisper error: ' + rawText });
+    }
+
+    const data = JSON.parse(rawText);
+    console.log('[Groq Whisper] Transcript:', data.text);
+    res.json({ transcript: data.text || '' });
+
+  } catch (err) {
+    console.error('[Groq Whisper] Error:', err.message);
+    res.status(500).json({ error: 'Transcription failed: ' + err.message });
+  }
+});
+
+// ─── POST /api/ai-interview/evaluate ───
+// Evaluates all 30 answers (10 lang + 10 project + 10 HR) using AI
+app.post('/api/ai-interview/evaluate', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { answers } = req.body;
+  if (!Array.isArray(answers) || answers.length === 0) {
+    return res.status(400).json({ error: 'answers array is required' });
+  }
+
+  const answersText = answers.map((a, i) => {
+    const typeLabel = a.type === 'lang' ? 'Language' : a.type === 'project' ? 'Project' : 'HR';
+    if (a.skipped || !a.answer || a.answer.trim() === '') {
+      return `Q${i + 1} [${typeLabel} - ${a.category}]: ${a.question}\nAnswer: [SKIPPED / NO ANSWER]`;
+    }
+    return `Q${i + 1} [${typeLabel} - ${a.category}]: ${a.question}\nAnswer: ${a.answer}`;
+  }).join('\n\n');
+
+  const prompt = `You are a senior technical and HR interviewer evaluating a student's spoken answers in a mock interview.
+
+The interview has 3 sections:
+- Questions 1-10: Programming Language technical questions
+- Questions 11-20: Project-based technical questions  
+- Questions 21-30: HR / Behavioral questions
+
+Evaluate each answer and give:
+1. A score from 0 to 10
+2. Brief, constructive feedback (1-2 sentences) appropriate to the question type
+
+Scoring guide:
+- 9-10: Excellent — thorough, accurate, with specific examples or explanation
+- 7-8:  Good — correct but could use more depth or examples
+- 5-6:  Average — partially correct, lacks detail
+- 3-4:  Weak — incorrect or very vague
+- 1-2:  Very poor — mostly irrelevant
+- 0:    Skipped or blank
+
+For technical questions: focus on correctness, depth, and clarity.
+For HR questions: focus on communication, self-awareness, and relevance.
+
+${answersText}
+
+Respond ONLY with a valid JSON object. No markdown, no extra text:
+{
+  "totalScore": <average of all scores rounded to 1 decimal, scale 0-10>,
+  "maxScore": 10,
+  "breakdown": [
+    {
+      "question": "<question text>",
+      "type": "<lang|project|hr>",
+      "category": "<category>",
+      "score": <0-10>,
+      "feedback": "<1-2 sentence feedback>",
+      "skipped": <true or false>
+    }
+  ]
+}
+
+Be honest but encouraging. Evaluate all ${answers.length} questions now:`;
+
+  try {
+    let content = await callAIInterviewGroq([
+      { role: 'system', content: 'You are a professional technical and HR interviewer evaluating student answers. Always respond with valid JSON only, no markdown, no extra text.' },
+      { role: 'user', content: prompt }
+    ], 3000);
+
+    content = content.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+    const start = content.indexOf('{');
+    const end   = content.lastIndexOf('}');
+    if (start === -1 || end === -1) throw new Error('No valid JSON');
+
+    const result = JSON.parse(content.substring(start, end + 1));
+    result.totalScore = result.totalScore ?? 0;
+    result.maxScore   = result.maxScore   ?? 10;
+    result.breakdown  = result.breakdown  || [];
+
+    // Save to Supabase
+    const scorePercent = Math.round((result.totalScore / result.maxScore) * 100);
+    const { data: stats } = await supabase
+      .from('user_stats').select('interview_score_avg').eq('user_id', user.id).single();
+
+    const newAvg = stats ? Math.round((stats.interview_score_avg + scorePercent) / 2) : scorePercent;
+    await supabase.from('user_stats').update({ interview_score_avg: newAvg }).eq('user_id', user.id);
+
+    await supabase.from('assessment_evaluations').insert({
+      user_id:      user.id,
+      module:       'ai_voice_interview',
+      subject:      'AI Voice Interview',
+      score:        result.totalScore,
+      total:        result.maxScore,
+      ai_suggestion:`AI Voice Interview complete. Score: ${result.totalScore}/${result.maxScore} (${scorePercent}%)`,
+      details:      result.breakdown
+    });
+
+    res.json(result);
+
+  } catch (err) {
+    console.error('[AI Interview] Evaluation error:', err.message);
+    // Return basic scores without AI feedback
+    const basicBreakdown = answers.map((a, i) => ({
+      question: a.question,
+      type:     a.type,
+      category: a.category,
+      score:    a.skipped || !a.answer ? 0 : 5,
+      feedback: a.skipped ? 'Question was skipped.' : 'Answer recorded. AI evaluation unavailable.',
+      skipped:  a.skipped || !a.answer
+    }));
+    const avg = basicBreakdown.reduce((s,b)=>s+b.score,0)/basicBreakdown.length;
+    res.json({ totalScore: Math.round(avg*10)/10, maxScore: 10, breakdown: basicBreakdown });
   }
 });
 

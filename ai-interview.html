@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Voice Interview – InterviewOS</title>
+  <link rel="stylesheet" href="dashboard.css?v=3"/>
+  <link rel="stylesheet" href="ai-interview.css"/>
+</head>
+<body>
+<div class="ai-page">
+
+  <!-- ═══ SIDEBAR (copied from dashboard) ═══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">&lt;/&gt;</div>
+      <div>
+        <div class="sidebar-brand-text">Interview<span>OS</span></div>
+        <div class="sidebar-brand-sub">AI Mock Interview Platform</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item" href="dashboard.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item" href="coding.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Coding Questions
+      </a>
+      <a class="nav-item" href="quiz.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Quiz
+      </a>
+      <a class="nav-item" href="interview.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Interview
+      </a>
+      <a class="nav-item" href="hr-interview.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        HR Mock Interview
+      </a>
+      <a class="nav-item" href="aptitude.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        Aptitude & Reasoning
+      </a>
+      <a class="nav-item active" href="ai-interview.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a9 9 0 019 9c0 4.56-3.38 8.34-7.8 8.93L12 22l-1.2-2.07C6.38 19.34 3 15.56 3 11A9 9 0 0112 2z"/><circle cx="12" cy="11" r="3"/></svg>
+        AI Voice Interview
+      </a>
+      <div class="nav-section-label">Career Tools</div>
+      <a class="nav-item" href="https://ats-friendly-resume-webite.onrender.com" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+        Resume Builder
+      </a>
+      <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+      Company Prep
+    </a>
+
+      <!-- INSIGHTS -->
+      <div class="nav-section-label">Insights</div>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Progress
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+        Bookmarks
+      </a>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Reports
+      </a>
+
+      <div class="nav-section-label">AI Tools</div>
+      <a class="nav-item" href="improve.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Improve Me (AI Roadmap)
+      </a>
+      <!-- SYSTEM -->
+      <div class="nav-section-label">System</div>
+      <a class="nav-item" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Settings
+      </a>
+    </nav>
+    <div class="sidebar-user" id="sidebarUser">
+      <div class="sidebar-avatar" id="sidebarAvatar">AI</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="sidebarName">Loading...</div>
+        <div class="sidebar-user-plan" id="sidebarPlan">Plan 🔥</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <main class="ai-main">
+
+    <!-- header -->
+    <div class="page-header">
+      <a href="dashboard.html" class="back-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Back
+      </a>
+      <div>
+        <h1>🎤 AI Voice Interview</h1>
+        <p>Speak your answers — AI evaluates your responses in real-time</p>
+      </div>
+    </div>
+
+    <!-- no-speech warning -->
+    <div class="nospeech-banner" id="nospeechBanner">
+      ⚠️ Microphone access is required for the AI Voice Interview. Please allow microphone access in your browser and reload the page.
+    </div>
+
+    <!-- step bar -->
+    <div class="step-bar" id="stepBar">
+      <div class="step-item">
+        <div class="step-num active" id="sn1">1</div>
+        <div class="step-label active" id="sl1">Programming Languages</div>
+      </div>
+      <div class="step-line" id="line1"></div>
+      <div class="step-item">
+        <div class="step-num" id="sn2">2</div>
+        <div class="step-label" id="sl2">Project Frontend</div>
+      </div>
+      <div class="step-line" id="line2"></div>
+      <div class="step-item">
+        <div class="step-num" id="sn3">3</div>
+        <div class="step-label" id="sl3">Backend & Database</div>
+      </div>
+      <div class="step-line" id="line3"></div>
+      <div class="step-item">
+        <div class="step-num" id="sn4">🎤</div>
+        <div class="step-label" id="sl4">Interview</div>
+      </div>
+    </div>
+
+    <!-- ── STEP 1: Programming Languages ── -->
+    <div id="step1" class="onboard-card">
+      <h2>Which programming languages do you know?</h2>
+      <p class="sub">Select all that apply. AI will generate 10 language-specific questions based on your selections.</p>
+      <div class="chip-grid" id="langGrid"></div>
+      <div class="selected-preview" id="langPreview">
+        <span style="color:var(--text-muted);font-style:italic;font-size:13px;">Your selected languages will appear here...</span>
+      </div>
+      <div class="onboard-actions">
+        <button class="btn-primary" id="step1Next" onclick="goStep2()" disabled>Next: Project Frontend →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: Frontend ── -->
+    <div id="step2" class="onboard-card" style="display:none;">
+      <h2>Which frontend technologies did you use in your project?</h2>
+      <p class="sub">Select the frontend languages and frameworks you used. Project questions will be tailored to these.</p>
+      <div class="chip-grid" id="frontendGrid"></div>
+      <div class="selected-preview" id="frontendPreview">
+        <span style="color:var(--text-muted);font-style:italic;font-size:13px;">Your frontend selections will appear here...</span>
+      </div>
+      <div class="onboard-actions">
+        <button class="btn-outline" onclick="goStep1()">← Back</button>
+        <button class="btn-primary" id="step2Next" onclick="goStep3()" disabled>Next: Backend & Database →</button>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: Backend + DB ── -->
+    <div id="step3" class="onboard-card" style="display:none;">
+      <h2>What backend technologies and databases did you use?</h2>
+      <p class="sub">Select your backend stack and databases. Combined with your frontend selections, AI will generate 10 project-based questions.</p>
+      <div class="chip-grid" id="backendGrid"></div>
+      <div class="selected-preview" id="backendPreview">
+        <span style="color:var(--text-muted);font-style:italic;font-size:13px;">Your backend selections will appear here...</span>
+      </div>
+      <div class="onboard-actions">
+        <button class="btn-outline" onclick="goStep2()">← Back</button>
+        <button class="btn-primary" id="step3Next" onclick="startInterview()" disabled>🎤 Start AI Interview →</button>
+      </div>
+    </div>
+
+    <!-- ── INTERVIEW PANEL ── -->
+    <div class="interview-wrap" id="interviewWrap">
+      <!-- loading state -->
+      <div class="onboard-card" id="loadingQs" style="display:none;">
+        <div class="load-qs">
+          <div class="spinner-lg"></div>
+          <p>AI is generating your personalised questions...</p>
+          <small id="loadMsg">Analysing your tech stack...</small>
+        </div>
+      </div>
+
+      <!-- actual interview -->
+      <div id="interviewMain" style="display:none;">
+        <div class="interview-layout">
+          <!-- left: question + mic -->
+          <div class="question-panel">
+            <div class="q-meta">
+              <div class="q-counter" id="qCounter">Q 1 / 30</div>
+              <div class="q-type-badge" id="qTypeBadge">Language</div>
+            </div>
+            <div class="q-progress-bar"><div class="q-progress-fill" id="qProgressFill" style="width:3.3%"></div></div>
+
+            <div class="question-text" id="questionText">Loading question...</div>
+
+            <div class="transcript-wrap" id="transcriptWrap">
+              <span class="placeholder" id="transcriptPlaceholder">Your spoken answer will appear here as you speak...</span>
+              <span class="transcript-text" id="transcriptText" style="display:none;"></span>
+            </div>
+
+            <div class="mic-row">
+              <button class="mic-btn start" id="startBtn" onclick="startListening()">🎤 Start Speaking</button>
+              <button class="mic-btn stop" id="stopBtn" onclick="stopListening()" disabled>⏹ Stop</button>
+              <button class="mic-btn next" id="nextBtn" onclick="goNextQuestion(false)" disabled>Next Question →</button>
+              <button class="mic-btn skip" id="skipBtn" onclick="skipQuestion()">⏭ I don't know</button>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;">
+              <div class="status-pill" id="statusPill">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusLabel">Press Start Speaking to begin</span>
+              </div>
+              <div class="wave" id="waveAnim">
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div><div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- right: info sidebar -->
+          <div class="side-panel">
+            <div class="info-card">
+              <h4>📌 Your Tech Stack</h4>
+              <div style="margin-bottom:10px;">
+                <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Languages</div>
+                <div class="tag-row" id="stackLangs"></div>
+              </div>
+              <div style="margin-bottom:10px;">
+                <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Frontend</div>
+                <div class="tag-row" id="stackFrontend"></div>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Backend & DB</div>
+                <div class="tag-row" id="stackBackend"></div>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <h4>📊 Section Progress</h4>
+              <div class="score-item">
+                <div class="score-row"><span>Language Qs (10)</span><span id="spLang">0/10</span></div>
+                <div class="score-bar"><div class="score-bar-fill" id="spLangBar" style="width:0%"></div></div>
+              </div>
+              <div class="score-item">
+                <div class="score-row"><span>Project Qs (10)</span><span id="spProj">0/10</span></div>
+                <div class="score-bar"><div class="score-bar-fill" id="spProjBar" style="width:0%"></div></div>
+              </div>
+              <div class="score-item">
+                <div class="score-row"><span>HR Qs (10)</span><span id="spHR">0/10</span></div>
+                <div class="score-bar"><div class="score-bar-fill" id="spHRBar" style="width:0%"></div></div>
+              </div>
+            </div>
+
+            <div class="info-card" style="background:linear-gradient(135deg,#EDE9FE,#F5F3FF);">
+              <h4 style="color:var(--purple);">💡 Tips</h4>
+              <ul style="font-size:12.5px;color:#5B21B6;line-height:1.8;padding-left:16px;">
+                <li>Click <strong>Start Speaking</strong> — mic records locally</li>
+                <li>Speak clearly at a natural pace</li>
+                <li>Click <strong>Stop</strong> when done — Whisper AI transcribes</li>
+                <li>Say <strong>"I don't know"</strong> to skip a question</li>
+                <li>Works in <strong>any modern browser</strong> 🌐</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RESULTS ── -->
+    <div class="results-wrap" id="resultsWrap">
+      <div class="results-header">
+        <div class="results-score-big">
+          <span class="num" id="rTotalScore">–</span>
+          <span class="of">/ 30</span>
+        </div>
+        <div class="results-header-text">
+          <h2 id="rHeadline">Interview Complete!</h2>
+          <p id="rSubline">Here's your detailed performance breakdown across all 30 questions.</p>
+        </div>
+      </div>
+
+      <div class="results-stats" id="rStats"></div>
+
+      <div class="results-list" id="rList"></div>
+
+      <div class="results-actions">
+        <button class="btn-primary" onclick="restartAll()">↺ Try Again</button>
+        <button class="btn-outline" onclick="window.location.href='dashboard.html'">← Back to Dashboard</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Eval Overlay -->
+<div class="eval-overlay" id="evalOverlay">
+  <div class="eval-spinner"></div>
+  <p>AI is evaluating your answers...</p>
+  <small>This may take 15–20 seconds</small>
+</div>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+<!-- Script-->
+  <script src="ai-interview.js"></script>
+</body>
+</html>

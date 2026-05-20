@@ -90,9 +90,10 @@ async function loadProgress() {
   if (!data || data.error) return;
 
   const labels = data.map(d => d.day);
-  const coding = data.map(d => d.coding_score);
-  const quiz = data.map(d => d.quiz_score);
-  const interview = data.map(d => d.interview_score);
+  const coding    = data.map(d => d.coding_score    ?? 0);
+  const quiz      = data.map(d => d.quiz_score      ?? 0);
+  const interview = data.map(d => d.interview_score ?? 0);
+  const aptitude  = data.map(d => d.aptitude_score  ?? 0);
 
   const ctx = document.getElementById('progressChart').getContext('2d');
 
@@ -108,52 +109,61 @@ async function loadProgress() {
           data: coding,
           borderColor: '#6C4FE8',
           backgroundColor: 'rgba(108,79,232,0.08)',
-          fill: true,
-          tension: 0.4,
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: '#6C4FE8',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2
+          fill: true, tension: 0.4, borderWidth: 2.5,
+          pointRadius: 4, pointBackgroundColor: '#6C4FE8',
+          pointBorderColor: '#fff', pointBorderWidth: 2
         },
         {
           label: 'Quiz',
           data: quiz,
           borderColor: '#10B981',
           backgroundColor: 'rgba(16,185,129,0.06)',
-          fill: true,
-          tension: 0.4,
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: '#10B981',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2
+          fill: true, tension: 0.4, borderWidth: 2.5,
+          pointRadius: 4, pointBackgroundColor: '#10B981',
+          pointBorderColor: '#fff', pointBorderWidth: 2
         },
         {
           label: 'Interview',
           data: interview,
           borderColor: '#F97316',
           backgroundColor: 'rgba(249,115,22,0.06)',
-          fill: true,
-          tension: 0.4,
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: '#F97316',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2
+          fill: true, tension: 0.4, borderWidth: 2.5,
+          pointRadius: 4, pointBackgroundColor: '#F97316',
+          pointBorderColor: '#fff', pointBorderWidth: 2
+        },
+        {
+          label: 'Aptitude & Reasoning',
+          data: aptitude,
+          borderColor: '#F59E0B',
+          backgroundColor: 'rgba(245,158,11,0.06)',
+          fill: true, tension: 0.4, borderWidth: 2.5,
+          pointRadius: 4, pointBackgroundColor: '#F59E0B',
+          pointBorderColor: '#fff', pointBorderWidth: 2
         }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: {
+          display: false,
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            pointStyleWidth: 8,
+            font: { size: 12, family: 'Inter' },
+            color: '#6B7280',
+            padding: 20
+          }
+        }
+      },
       scales: {
         y: {
           beginAtZero: true,
           max: 100,
           grid: { color: '#F3F4F6' },
-          ticks: { font: { size: 11, family: 'Inter' }, color: '#9CA3AF' }
+          ticks: { stepSize: 10, font: { size: 11, family: 'Inter' }, color: '#9CA3AF' }
         },
         x: {
           grid: { display: false },
